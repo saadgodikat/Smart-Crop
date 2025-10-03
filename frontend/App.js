@@ -1,0 +1,272 @@
+import React, { useState, useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+// Removed bottom tabs in favor of stack-only navigation
+import { createStackNavigator } from '@react-navigation/stack';
+import { Provider as PaperProvider } from 'react-native-paper';
+import { StatusBar } from 'expo-status-bar';
+import { LanguageProvider, useLanguage } from './src/context/LanguageContext';
+
+// Import screens
+import LanguageSelectionScreen from './src/screens/LanguageSelectionScreen';
+import LoginScreen from './src/screens/LoginScreen';
+import SignupScreen from './src/screens/SignupScreen';
+import DashboardScreen from './src/screens/DashboardScreen';
+import AdvisoryScreen from './src/screens/AdvisoryScreen';
+import SoilHealthScreen from './src/screens/SoilHealthScreen';
+import WeatherScreen from './src/screens/WeatherScreen';
+import MarketPricesScreen from './src/screens/MarketPricesScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import FeedbackScreen from './src/screens/FeedbackScreen';
+import HelpScreen from './src/screens/HelpScreen';
+import PestDetectionScreen from './src/screens/PestDetectionScreen';
+import SoilHealthMethodScreen from './src/screens/SoilHealthMethodScreen';
+import SoilKitPurchaseScreen from './src/screens/SoilKitPurchaseScreen';
+import AlertsScreen from './src/screens/AlertsScreen';
+import DebugScreen from './src/screens/DebugScreen';
+import ChatbotScreen from './src/screens/ChatbotScreen';
+
+// import notificationService from './src/services/notificationService';
+import { testBackendConnection } from './src/services/testConnection';
+
+// Theme
+import theme from './src/theme/theme';
+
+const Stack = createStackNavigator();
+
+function AppContent() {
+  const { currentTheme, changeLanguage } = useLanguage();
+  const [selectedLanguage, setSelectedLanguage] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // Check if user is already logged in (from AsyncStorage in a real app)
+    // For demo purposes, we'll start with login screen
+    
+    // Test backend connection on app start
+    testBackendConnection();
+    
+    // Setup notification permissions when app starts
+    // if (isLoggedIn && user) {
+    //   setupNotifications();
+    // }
+  }, [isLoggedIn, user]);
+
+  // const setupNotifications = async () => {
+  //   try {
+  //     const token = await notificationService.registerForPushNotifications();
+  //     if (token && user) {
+  //       await notificationService.registerTokenWithBackend(user.id, token);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error setting up notifications:', error);
+  //   }
+  // };
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    console.log('Logout function called');
+    setUser(null);
+    setIsLoggedIn(false);
+  };
+
+  const handleLanguageSelect = (languageCode) => {
+    setSelectedLanguage(languageCode);
+    changeLanguage(languageCode);
+  };
+
+  return (
+    <PaperProvider theme={currentTheme}>
+      <NavigationContainer>
+        <StatusBar style="light" backgroundColor={currentTheme.colors.primary} />
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {!selectedLanguage ? (
+            <Stack.Screen name="LanguageSelection">
+              {(props) => <LanguageSelectionScreen {...props} onLanguageSelect={handleLanguageSelect} />}
+            </Stack.Screen>
+          ) :
+          !isLoggedIn ? (
+            <>
+              <Stack.Screen name="Login">
+                {(props) => <LoginScreen {...props} onLogin={handleLogin} language={selectedLanguage} />}
+              </Stack.Screen>
+              <Stack.Screen name="Signup">
+                {(props) => <SignupScreen {...props} onLogin={handleLogin} language={selectedLanguage} />}
+              </Stack.Screen>
+            </>
+          ) : (
+            <>
+              {/* Stack-only navigation, no bottom tabs */}
+              <Stack.Screen name="Dashboard">
+                {(props) => (
+                  <DashboardScreen
+                    {...props}
+                    user={user}
+                    language={selectedLanguage}
+                  />
+                )}
+              </Stack.Screen>
+              <Stack.Screen
+                name="Advisory"
+                options={{
+                  title: 'Crop Advisory / फसल सलाह',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: currentTheme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <AdvisoryScreen {...props} user={user} language={selectedLanguage} />}
+              </Stack.Screen>
+              <Stack.Screen
+                name="SoilHealthMethod"
+                options={{
+                  title: 'Soil Health Method / मिट्टी स्वास्थ्य विधि',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <SoilHealthMethodScreen {...props} user={user} language={selectedLanguage} />}
+              </Stack.Screen>
+              <Stack.Screen
+                name="SoilKitPurchase"
+                options={{
+                  title: 'Soil Kit Purchase / मिट्टी किट खरीदारी',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <SoilKitPurchaseScreen {...props} user={user} language={selectedLanguage} />}
+              </Stack.Screen>
+              <Stack.Screen
+                name="Soil"
+                options={{
+                  title: 'Soil Health / मिट्टी स्वास्थ्य',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <SoilHealthScreen {...props} user={user} language={selectedLanguage} />}
+              </Stack.Screen>
+              <Stack.Screen
+                name="Weather"
+                options={{
+                  title: 'Weather / मौसम',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <WeatherScreen {...props} user={user} language={selectedLanguage} />}
+              </Stack.Screen>
+              <Stack.Screen
+                name="Market"
+                options={{
+                  title: 'Market Prices / बाजार मूल्य',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <MarketPricesScreen {...props} user={user} language={selectedLanguage} />}
+              </Stack.Screen>
+              <Stack.Screen
+                name="PestDetection"
+                options={{
+                  title: 'Pest Detection / कीट पहचान',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <PestDetectionScreen {...props} user={user} language={selectedLanguage} />}
+              </Stack.Screen>
+              <Stack.Screen
+                name="Profile"
+                options={{
+                  title: 'Profile / प्रोफाइल',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <ProfileScreen {...props} user={user} language={selectedLanguage} onLogout={handleLogout} />}
+              </Stack.Screen>
+              <Stack.Screen 
+                name="Feedback" 
+                options={{ 
+                  title: 'Feedback / प्रतिक्रिया',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff'
+                }}
+              >
+                {(props) => <FeedbackScreen {...props} user={user} language={selectedLanguage} />}
+              </Stack.Screen>
+              <Stack.Screen 
+                name="Help" 
+                options={{ 
+                  title: 'Help / सहायता',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff'
+                }}
+              >
+                {(props) => <HelpScreen {...props} user={user} language={selectedLanguage} />}
+              </Stack.Screen>
+              <Stack.Screen 
+                name="Alerts" 
+                options={{ 
+                  title: 'Alerts / अलर्ट',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff'
+                }}
+              >
+                {(props) => <AlertsScreen {...props} userId={user?.id} language={selectedLanguage} />}
+              </Stack.Screen>
+              <Stack.Screen 
+                name="Debug" 
+                component={DebugScreen}
+                options={{ 
+                  title: 'Debug Connection',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff'
+                }}
+              />
+              <Stack.Screen 
+                name="Chatbot" 
+                options={{ 
+                  title: 'AI Assistant / स्मार्ट सहायक',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff'
+                }}
+              >
+                {(props) => <ChatbotScreen {...props} user={user} language={selectedLanguage} />}
+              </Stack.Screen>
+
+            </>
+          )
+          }
+        </Stack.Navigator>
+
+      </NavigationContainer>
+    </PaperProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
+  );
+}

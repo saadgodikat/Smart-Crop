@@ -1,0 +1,535 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import {
+  Card,
+  Title,
+  Text,
+  ActivityIndicator,
+  Menu,
+  Button,
+  TextInput,
+} from 'react-native-paper';
+import { getTranslation } from '../utils/translations';
+import { getValidCitiesByState, getVerifiedCommodities } from '../utils/marketApiTester';
+import { checkAPIHealth } from '../utils/apiValidator';
+
+export default function MarketPricesScreen({ user, language = 'en' }) {
+  const t = (key) => getTranslation(language, key);
+  const [prices, setPrices] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedState, setSelectedState] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [vegetable, setVegetable] = useState('');
+  const [stateMenuVisible, setStateMenuVisible] = useState(false);
+  const [cityMenuVisible, setCityMenuVisible] = useState(false);
+  const [stateSearch, setStateSearch] = useState('');
+  const [citySearch, setCitySearch] = useState('');
+  const [apiHealth, setApiHealth] = useState(null);
+
+  // Safe getter functions
+  const getFilteredStates = () => {
+    try {
+      return states.filter(state => {
+        if (!state || typeof state !== 'string') return false;
+        const searchTerm = (stateSearch || '').toLowerCase();
+        return state.toLowerCase().includes(searchTerm);
+      });
+    } catch (error) {
+      console.error('Error filtering states:', error);
+      return states;
+    }
+  };
+
+  const getFilteredCities = () => {
+    try {
+      const cities = citiesByState[selectedState] || [];
+      return cities.filter(city => {
+        if (!city || typeof city !== 'string') return false;
+        const searchTerm = (citySearch || '').toLowerCase();
+        return city.toLowerCase().includes(searchTerm);
+      });
+    } catch (error) {
+      console.error('Error filtering cities:', error);
+      return citiesByState[selectedState] || [];
+    }
+  };
+
+  const API_KEY = '579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b';
+  
+  // Check API health on component mount
+  React.useEffect(() => {
+    const testAPIHealth = async () => {
+      const health = await checkAPIHealth();
+      setApiHealth(health);
+      console.log('🌡️ API Health:', health);
+    };
+    testAPIHealth();
+  }, []);
+  
+  const states = [
+    'Andhra Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Delhi', 'Gujarat', 
+    'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 
+    'Madhya Pradesh', 'Maharashtra', 'Odisha', 'Punjab', 'Rajasthan', 
+    'Tamil Nadu', 'Telangana', 'Uttar Pradesh', 'West Bengal'
+  ];
+
+
+
+  // Use validated cities that actually return data from API
+  const citiesByState = getValidCitiesByState();
+
+  const searchPrices = async () => {
+    console.log('=== MARKET PRICE API DEBUG ===');
+    console.log('Selected State:', selectedState);
+    console.log('Selected City:', selectedCity);
+    console.log('Vegetable:', vegetable);
+    
+    if (!selectedState || !vegetable.trim()) {
+      Alert.alert(t('error'), `${t('pleaseEnter')} ${language === 'hi' ? 'राज्य और वस्तु' : 'state and vegetable'}`);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Build API URL with proper encoding
+      const stateFilter = encodeURIComponent(selectedState);
+      const commodityFilter = encodeURIComponent(vegetable.trim());
+      
+      const apiUrl = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${API_KEY}&format=json&filters[state]=${stateFilter}&filters[commodity]=${commodityFilter}&limit=50`;
+      
+      console.log('🔗 API URL:', apiUrl);
+      console.log('📤 Making API request...');
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📥 Response Status:', response.status);
+      console.log('📥 Response Headers:', response.headers);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API Error Response:', errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ API Response Data:', JSON.stringify(data, null, 2));
+      console.log('📊 Total Records:', data.records?.length || 0);
+      
+      let filteredPrices = data.records || [];
+      console.log('🔍 Before city filtering:', filteredPrices.length, 'records');
+      
+      // Debug: Show sample record structure
+      if (filteredPrices.length > 0) {
+        console.log('📋 Sample Record:', JSON.stringify(filteredPrices[0], null, 2));
+      }
+      
+      // Enhanced city filtering with better matching
+      if (selectedCity && filteredPrices.length > 0) {
+        console.log('🏙️ Filtering by city:', selectedCity);
+        const beforeFilter = filteredPrices.length;
+        
+        filteredPrices = filteredPrices.filter(price => {
+          const market = (price.market || '').toLowerCase();
+          const district = (price.district || '').toLowerCase();
+          const searchCity = selectedCity.toLowerCase();
+          
+          // Enhanced city variations mapping
+          const cityVariations = {
+            'solapur': ['sholapur', 'solapur'],
+            'mumbai': ['mumbai', 'bombay'],
+            'pune': ['pune', 'poona'],
+            'bengaluru': ['bengaluru', 'bangalore'],
+            'kolkata': ['kolkata', 'calcutta'],
+            'thiruvananthapuram': ['thiruvananthapuram', 'trivandrum'],
+            'kochi': ['kochi', 'cochin'],
+            'gurgaon': ['gurgaon', 'gurugram'],
+            'new delhi': ['new delhi', 'delhi'],
+            'central delhi': ['central delhi', 'delhi'],
+            'south delhi': ['south delhi', 'delhi']
+          };
+          
+          const searchVariations = cityVariations[searchCity] || [searchCity];
+          
+          // More flexible matching - check if city name is contained in market/district
+          const cityMatch = searchVariations.some(variation => {
+            const words = variation.split(' ');
+            return words.some(word => 
+              word.length > 2 && (market.includes(word) || district.includes(word))
+            );
+          });
+          
+          if (cityMatch) {
+            console.log('✅ City match found:', price.market, price.district, 'for search:', selectedCity);
+          }
+          return cityMatch;
+        });
+        
+        console.log(`🔍 City filtering: ${beforeFilter} → ${filteredPrices.length} records`);
+      }
+      
+      console.log('📈 Final Results:', filteredPrices.length, 'records');
+      
+      if (filteredPrices.length === 0) {
+        // Try to get data for the state without city filter
+        console.log('🔄 No data found, trying state-wide search...');
+        
+        const stateWideUrl = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${API_KEY}&format=json&filters[state]=${stateFilter}&limit=20`;
+        
+        try {
+          const stateResponse = await fetch(stateWideUrl);
+          const stateData = await stateResponse.json();
+          const availableCommodities = [...new Set((stateData.records || []).map(r => r.commodity))].slice(0, 5);
+          
+          console.log('📊 Available commodities in', selectedState, ':', availableCommodities);
+          
+          const suggestions = availableCommodities.length > 0 
+            ? `\n\nAvailable in ${selectedState}:\n• ${availableCommodities.join('\n• ')}`
+            : '';
+            
+          const message = `No prices found for "${vegetable}" in ${selectedCity || selectedState}.\n\nTry:\n• Different spelling (Tomato, Onion, Potato)\n• Different state (Maharashtra, Punjab, Gujarat)\n• Remove city filter${suggestions}`;
+          
+          Alert.alert('No Data Found', message);
+        } catch (error) {
+          console.error('Error fetching state-wide data:', error);
+          const message = `No prices found for "${vegetable}" in ${selectedCity || selectedState}.\n\nTry:\n• Different spelling (Tomato, Onion, Potato)\n• Different state (Maharashtra, Punjab, Gujarat)\n• Remove city filter`;
+          Alert.alert('No Data Found', message);
+        }
+      }
+      
+      setPrices(filteredPrices);
+    } catch (error) {
+      console.error('❌ Market API Error:', error);
+      console.error('❌ Error Stack:', error.stack);
+      
+      let errorMessage = 'Unable to fetch market prices. ';
+      if (error.message.includes('Network')) {
+        errorMessage += 'Check your internet connection.';
+      } else if (error.message.includes('404')) {
+        errorMessage += 'API endpoint not found.';
+      } else if (error.message.includes('403')) {
+        errorMessage += 'API access denied. Check API key.';
+      } else {
+        errorMessage += error.message;
+      }
+      
+      Alert.alert('API Error', errorMessage);
+      setPrices([]);
+    } finally {
+      setLoading(false);
+      console.log('=== API DEBUG END ===');
+    }
+  };
+
+
+
+  return (
+    <ScrollView style={styles.container}>
+      <Title style={styles.title}>{t('currentPrices')}</Title>
+      
+      {/* API Status Indicator */}
+      {apiHealth && (
+        <Card style={[styles.statusCard, apiHealth.status === 'healthy' ? styles.healthyStatus : styles.errorStatus]} elevation={1}>
+          <Card.Content>
+            <Text style={styles.statusText}>
+              {apiHealth.status === 'healthy' 
+                ? `✅ API Active - ${apiHealth.recordsAvailable || 'Many'} records available`
+                : `❌ API Issue: ${apiHealth.error}`
+              }
+            </Text>
+          </Card.Content>
+        </Card>
+      )}
+      
+      <Card style={styles.card}>
+        <Card.Content>
+          <View style={styles.dropdownContainer}>
+            <Menu
+              visible={stateMenuVisible}
+              onDismiss={() => {
+                setStateMenuVisible(false);
+                setStateSearch('');
+              }}
+              anchor={
+                <Button
+                  mode="outlined"
+                  onPress={() => setStateMenuVisible(true)}
+                  style={styles.dropdown}
+                  contentStyle={styles.dropdownContent}
+                >
+                  {selectedState || t('selectState')}
+                </Button>
+              }
+            >
+              <View style={styles.searchContainer}>
+                <TextInput
+                  placeholder={t('searchStates')}
+                  value={stateSearch || ''}
+                  onChangeText={(text) => setStateSearch(text || '')}
+                  style={styles.searchInput}
+                  mode="outlined"
+                  dense
+                  autoCapitalize="none"
+                />
+              </View>
+              {getFilteredStates().map((state) => (
+                <Menu.Item
+                  key={state}
+                  onPress={() => {
+                    setSelectedState(state);
+                    setSelectedCity('');
+                    setStateMenuVisible(false);
+                    setStateSearch('');
+                  }}
+                  title={state}
+                />
+              ))}
+              {getFilteredStates().length === 0 && (
+                <Menu.Item title={t('noResults')} disabled />
+              )}
+            </Menu>
+
+            <Menu
+              visible={cityMenuVisible}
+              onDismiss={() => {
+                setCityMenuVisible(false);
+                setCitySearch('');
+              }}
+              anchor={
+                <Button
+                  mode="outlined"
+                  onPress={() => setCityMenuVisible(true)}
+                  style={[styles.dropdown, !selectedState && styles.disabledDropdown]}
+                  contentStyle={styles.dropdownContent}
+                  disabled={!selectedState}
+                >
+                  {selectedCity || (selectedState ? t('selectCity') : t('selectStateFirst'))}
+                </Button>
+              }
+            >
+              {selectedState && (
+                <View style={styles.searchContainer}>
+                  <TextInput
+                    placeholder={t('searchCities')}
+                    value={citySearch || ''}
+                    onChangeText={(text) => setCitySearch(text || '')}
+                    style={styles.searchInput}
+                    mode="outlined"
+                    dense
+                    autoCapitalize="none"
+                  />
+                </View>
+              )}
+              {getFilteredCities().map((city) => (
+                <Menu.Item
+                  key={city}
+                  onPress={() => {
+                    setSelectedCity(city);
+                    setCityMenuVisible(false);
+                    setCitySearch('');
+                  }}
+                  title={city}
+                />
+              ))}
+              {selectedState && getFilteredCities().length === 0 && (
+                <Menu.Item title={t('noResults')} disabled />
+              )}
+            </Menu>
+          </View>
+
+          <TextInput
+            label={t('commodity')}
+            value={vegetable}
+            onChangeText={setVegetable}
+            mode="outlined"
+            style={styles.input}
+            placeholder={language === 'hi' ? 'कोशिश करें: आलू, प्याज, टमाटर, चावल, गेहूं' : 'Try: Potato, Onion, Tomato, Rice, Wheat'}
+          />
+          
+          <Text style={styles.suggestionText}>
+            💡 Verified: {getVerifiedCommodities().slice(0, 6).join(', ')}
+          </Text>
+          
+          <Text style={styles.noteText}>
+            📍 Note: Cities shown are verified to have market data available
+          </Text>
+          
+          <Button
+            mode="contained"
+            onPress={searchPrices}
+            style={styles.button}
+            disabled={loading}
+          >
+            {loading ? t('searching') : t('search')}
+          </Button>
+        </Card.Content>
+      </Card>
+
+      {loading && (
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" />
+        </View>
+      )}
+
+      {prices.length > 0 && (
+        <Card style={styles.resultsHeader} elevation={1}>
+          <Card.Content>
+            <Text style={styles.resultsTitle}>
+              {language === 'hi' ? `📊 ${vegetable} के लिए ${selectedCity || selectedState} में ${prices.length} परिणाम मिले` : `📊 Found ${prices.length} results for ${vegetable} in ${selectedCity || selectedState}`}
+            </Text>
+          </Card.Content>
+        </Card>
+      )}
+
+      {prices.map((price, index) => (
+        <Card key={index} style={styles.priceCard}>
+          <Card.Content>
+            <View style={styles.priceRow}>
+              <Text style={styles.commodity}>{price.commodity}</Text>
+              <Text style={styles.price}>₹{price.modal_price || 'N/A'}</Text>
+            </View>
+            <Text style={styles.market}>{price.market || t('marketNotSpecified')}</Text>
+            <Text style={styles.state}>{t('state')}: {price.state}</Text>
+            <Text style={styles.range}>
+              {t('min')}: ₹{price.min_price || 'N/A'} | {t('max')}: ₹{price.max_price || 'N/A'}
+            </Text>
+            <Text style={styles.date}>{t('date')}: {price.arrival_date || t('notSpecified')}</Text>
+          </Card.Content>
+        </Card>
+      ))}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 15,
+    backgroundColor: '#f5f5f5',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  card: {
+    marginBottom: 15,
+  },
+  dropdownContainer: {
+    marginBottom: 10,
+  },
+  dropdown: {
+    marginBottom: 12,
+    justifyContent: 'flex-start',
+  },
+  dropdownContent: {
+    justifyContent: 'flex-start',
+  },
+  disabledDropdown: {
+    opacity: 0.6,
+  },
+  input: {
+    marginBottom: 15,
+  },
+  button: {
+    backgroundColor: '#4CAF50',
+  },
+  loading: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  resultsHeader: {
+    marginBottom: 10,
+    backgroundColor: '#E8F5E8',
+  },
+  resultsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    textAlign: 'center',
+  },
+  priceCard: {
+    marginBottom: 10,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  commodity: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  price: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  market: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 3,
+  },
+  range: {
+    fontSize: 12,
+    color: '#999',
+  },
+  state: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 3,
+  },
+  date: {
+    fontSize: 10,
+    color: '#999',
+    marginTop: 5,
+  },
+  searchContainer: {
+    padding: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  searchInput: {
+    height: 40,
+    fontSize: 14,
+  },
+  suggestionText: {
+    fontSize: 11,
+    color: '#666',
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
+  noteText: {
+    fontSize: 10,
+    color: '#888',
+    marginBottom: 15,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  statusCard: {
+    marginBottom: 10,
+  },
+  healthyStatus: {
+    backgroundColor: '#E8F5E8',
+  },
+  errorStatus: {
+    backgroundColor: '#FFEBEE',
+  },
+  statusText: {
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+});
