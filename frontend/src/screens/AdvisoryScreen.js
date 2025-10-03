@@ -25,6 +25,13 @@ export default function AdvisoryScreen({ user }) {
   const [loading, setLoading] = useState(false);
   const [advisory, setAdvisory] = useState(null);
 
+  // New recommendation inputs
+  const seasons = ['Kharif', 'Rabi', 'Zaid', 'Summer', 'Monsoon'];
+  const [selectedSeason, setSelectedSeason] = useState('Kharif');
+  const [inputPH, setInputPH] = useState('');
+  const [region, setRegion] = useState('');
+  const [recommendations, setRecommendations] = useState([]);
+
   const soilTypes = ['black', 'sandy', 'clay', 'loamy', 'red'];
   const commonCrops = ['cotton', 'wheat', 'rice', 'maize', 'sugarcane', 'groundnut', 'soybean'];
 
@@ -43,6 +50,46 @@ export default function AdvisoryScreen({ user }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Local recommendation generator (season, pH, region)
+  const generateRecommendations = () => {
+    const ph = parseFloat(inputPH);
+    if (Number.isNaN(ph) || ph <= 0) {
+      return [];
+    }
+
+    const isAcidic = ph < 6.5;
+    const isNeutral = ph >= 6.5 && ph <= 7.5;
+    const isAlkaline = ph > 7.5;
+
+    const cropPool = [
+      { name: 'Wheat', seasons: ['Rabi'], ph: 'neutral', water: 'Moderate', fertilizer: 'NPK 120:60:40', sow: 'Nov-Dec', harvest: 'Mar-Apr' },
+      { name: 'Rice', seasons: ['Kharif'], ph: 'acidic', water: 'High', fertilizer: 'NPK 100:50:50', sow: 'Jun-Jul', harvest: 'Oct-Nov' },
+      { name: 'Maize', seasons: ['Kharif', 'Rabi'], ph: 'neutral', water: 'Moderate', fertilizer: 'NPK 120:60:40', sow: 'Jun-Jul', harvest: 'Sep-Oct' },
+      { name: 'Cotton', seasons: ['Kharif'], ph: 'alkaline', water: 'Low', fertilizer: 'NPK 90:45:45', sow: 'Apr-May', harvest: 'Oct-Dec' },
+      { name: 'Sorghum', seasons: ['Kharif', 'Rabi'], ph: 'alkaline', water: 'Low', fertilizer: 'NPK 80:40:40', sow: 'Jun-Jul', harvest: 'Sep-Oct' },
+      { name: 'Chickpea', seasons: ['Rabi'], ph: 'neutral', water: 'Low', fertilizer: 'NPK 20:40:0', sow: 'Oct-Nov', harvest: 'Feb-Mar' },
+      { name: 'Groundnut', seasons: ['Kharif'], ph: 'neutral', water: 'Moderate', fertilizer: 'NPK 20:40:40', sow: 'Jun-Jul', harvest: 'Oct-Nov' },
+      { name: 'Sugarcane', seasons: ['Summer'], ph: 'alkaline', water: 'High', fertilizer: 'NPK 250:115:115', sow: 'Feb-Mar', harvest: 'Jan-Feb' },
+    ];
+
+    const seasonFiltered = cropPool.filter(c => c.seasons.includes(selectedSeason));
+    const scored = seasonFiltered.map(crop => {
+      let score = 0;
+      if (isNeutral && crop.ph === 'neutral') score += 2;
+      if (isAcidic && crop.ph === 'acidic') score += 2;
+      if (isAlkaline && crop.ph === 'alkaline') score += 2;
+      if (region && crop.name.toLowerCase().includes('rice') && region.toLowerCase().includes('coastal')) score += 1;
+      return { ...crop, score };
+    });
+    const sorted = scored.sort((a, b) => b.score - a.score).slice(0, 5);
+    return sorted.map(c => ({ ...c, rating: c.score >= 2 ? 'High' : c.score === 1 ? 'Moderate' : 'Low' }));
+  };
+
+  const handleRecommend = () => {
+    const result = generateRecommendations();
+    setRecommendations(result);
   };
 
   const renderAdvisoryCard = () => {
@@ -153,6 +200,41 @@ export default function AdvisoryScreen({ user }) {
             ))}
           </View>
 
+          {/* Recommendation Inputs */}
+          <Text style={styles.inputLabel}>Season / मौसम</Text>
+          <View style={styles.chipContainer}>
+            {seasons.map((s) => (
+              <Chip
+                key={s}
+                selected={selectedSeason === s}
+                onPress={() => setSelectedSeason(s)}
+                style={[styles.chip, selectedSeason === s && styles.selectedChip]}
+                textStyle={selectedSeason === s && styles.selectedChipText}
+              >
+                {s}
+              </Chip>
+            ))}
+          </View>
+          <TextInput
+            label="pH Value (e.g., 6.8)"
+            value={inputPH}
+            onChangeText={setInputPH}
+            mode="outlined"
+            keyboardType="decimal-pad"
+            style={{ marginBottom: 12 }}
+            placeholder="Enter soil pH"
+            left={<TextInput.Icon icon="flask" />}
+          />
+          <TextInput
+            label="Region / क्षेत्र"
+            value={region}
+            onChangeText={setRegion}
+            mode="outlined"
+            style={{ marginBottom: 12 }}
+            placeholder="e.g., Solapur, Maharashtra"
+            left={<TextInput.Icon icon="map-marker" />}
+          />
+
           <Button
             mode="contained"
             onPress={handleGetAdvisory}
@@ -166,11 +248,40 @@ export default function AdvisoryScreen({ user }) {
               'Get Advisory / सलाह प्राप्त करें'
             )}
           </Button>
+
+          <Button
+            mode="outlined"
+            onPress={handleRecommend}
+            style={{ marginTop: 10 }}
+          >
+            Get Crop Recommendations
+          </Button>
         </Card.Content>
       </Card>
 
       {/* Results */}
       {renderAdvisoryCard()}
+
+      {/* Recommendation Results */}
+      {recommendations.length > 0 && (
+        <Card style={styles.advisoryCard} elevation={2}>
+          <Card.Content>
+            <Title style={{ marginBottom: 10 }}>Top 5 Crop Recommendations</Title>
+            {recommendations.map((rec, idx) => (
+              <Surface key={idx} style={styles.recoItem} elevation={1}>
+                <View style={styles.recoRow}>
+                  <Text style={styles.recoName}>{rec.name}</Text>
+                  <Text style={styles.recoRating}>Rating: {rec.rating}</Text>
+                </View>
+                <Text style={styles.recoDetail}>Fertilizer: {rec.fertilizer}</Text>
+                <Text style={styles.recoDetail}>Water: {rec.water}</Text>
+                <Text style={styles.recoDetail}>Sowing: {rec.sow}</Text>
+                <Text style={styles.recoDetail}>Harvesting: {rec.harvest}</Text>
+              </Surface>
+            ))}
+          </Card.Content>
+        </Card>
+      )}
 
       {/* Tips */}
       <Card style={styles.tipsCard} elevation={2}>

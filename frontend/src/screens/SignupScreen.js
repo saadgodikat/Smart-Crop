@@ -25,7 +25,6 @@ export default function SignupScreen({ navigation, onLogin }) {
     confirmPassword: '',
     location: '',
     soilType: '',
-    lastCrop: '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -34,7 +33,7 @@ export default function SignupScreen({ navigation, onLogin }) {
   };
 
   const handleSignup = async () => {
-    const { name, phone, password, confirmPassword, location, soilType, lastCrop } = formData;
+    const { name, phone, password, confirmPassword, location, soilType } = formData;
 
     if (!name || !phone || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all required fields');
@@ -59,7 +58,6 @@ export default function SignupScreen({ navigation, onLogin }) {
         password,
         location: location || null,
         soil_type: soilType || null,
-        last_crop: lastCrop || null,
       });
       
       Alert.alert(
@@ -153,15 +151,7 @@ export default function SignupScreen({ navigation, onLogin }) {
               left={<TextInput.Icon icon="earth" />}
             />
 
-            <TextInput
-              label="Last Crop / पिछली फसल (Optional)"
-              value={formData.lastCrop}
-              onChangeText={(value) => handleInputChange('lastCrop', value)}
-              mode="outlined"
-              style={styles.input}
-              placeholder="e.g., cotton, wheat, rice"
-              left={<TextInput.Icon icon="seedling" />}
-            />
+            {/* Removed Last Crop field as requested */}
 
             <Button
               mode="contained"

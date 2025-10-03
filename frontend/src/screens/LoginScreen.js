@@ -108,14 +108,14 @@ export default function LoginScreen({ navigation, onLogin }) {
               </Button>
             </View>
 
-            <View style={styles.demoCredentials}>
-              <Text style={styles.demoTitle}>Demo Credentials / डेमो क्रेडेंशियल्स:</Text>
-              <Text style={styles.demoText}>Phone: 9876543210</Text>
-              <Text style={styles.demoText}>Password: password123</Text>
-            </View>
+           {/* // <View style={styles.demoCredentials}> */}
+           {/* //   <Text style={styles.demoTitle}>Demo Credentials / डेमो क्रेडेंशियल्स:</Text> */}
+           {/* //   <Text style={styles.demoText}>Phone: 9876543210</Text> */}
+           {/* //   <Text style={styles.demoText}>Password: password123</Text> */}
+           {/* // </View> */} 
           </Card.Content>
         </Card>
-      </ScrollView>
+      </ScrollView> 
     </KeyboardAvoidingView>
   );
 }

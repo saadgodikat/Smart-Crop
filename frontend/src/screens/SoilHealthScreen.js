@@ -22,6 +22,8 @@ export default function SoilHealthScreen({ user }) {
   const [loading, setLoading] = useState(true);
   const [selectedSoilType, setSelectedSoilType] = useState(user?.soil_type || '');
 
+  // Recommendation flow removed from Soil Health as requested
+
   const soilTypes = ['black', 'sandy', 'clay', 'loamy', 'red'];
 
   useEffect(() => {
@@ -69,6 +71,7 @@ export default function SoilHealthScreen({ user }) {
       default: return '#666';
     }
   };
+
 
   const renderSoilHealthCard = (soil) => (
     <Card key={soil.id} style={styles.soilCard} elevation={3}>
@@ -171,6 +174,7 @@ export default function SoilHealthScreen({ user }) {
         </Card.Content>
       </Card>
 
+
       {/* Loading State */}
       {loading && (
         <View style={styles.loadingContainer}>
@@ -181,6 +185,7 @@ export default function SoilHealthScreen({ user }) {
 
       {/* Soil Health Cards */}
       {!loading && soilHealth.map(renderSoilHealthCard)}
+
 
       {/* General Tips */}
       <Card style={styles.tipsCard} elevation={2}>

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+// Removed bottom tabs in favor of stack-only navigation
 import { createStackNavigator } from '@react-navigation/stack';
 import { Provider as PaperProvider } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
 // Import screens
@@ -21,76 +20,7 @@ import HelpScreen from './src/screens/HelpScreen';
 // Theme
 import theme from './src/theme/theme';
 
-const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
-
-function MainTabs() {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-
-          if (route.name === 'Dashboard') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Advisory') {
-            iconName = focused ? 'leaf' : 'leaf-outline';
-          } else if (route.name === 'Soil') {
-            iconName = focused ? 'earth' : 'earth-outline';
-          } else if (route.name === 'Weather') {
-            iconName = focused ? 'cloud' : 'cloud-outline';
-          } else if (route.name === 'Market') {
-            iconName = focused ? 'trending-up' : 'trending-up-outline';
-          } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person-outline';
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: 'gray',
-        headerStyle: {
-          backgroundColor: theme.colors.primary,
-        },
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-      })}
-    >
-      <Tab.Screen 
-        name="Dashboard" 
-        component={DashboardScreen}
-        options={{ title: 'Dashboard / डैशबोर्ड' }}
-      />
-      <Tab.Screen 
-        name="Advisory" 
-        component={AdvisoryScreen}
-        options={{ title: 'Crop Advisory / फसल सलाह' }}
-      />
-      <Tab.Screen 
-        name="Soil" 
-        component={SoilHealthScreen}
-        options={{ title: 'Soil Health / मिट्टी स्वास्थ्य' }}
-      />
-      <Tab.Screen 
-        name="Weather" 
-        component={WeatherScreen}
-        options={{ title: 'Weather / मौसम' }}
-      />
-      <Tab.Screen 
-        name="Market" 
-        component={MarketPricesScreen}
-        options={{ title: 'Market Prices / बाजार मूल्य' }}
-      />
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileScreen}
-        options={{ title: 'Profile / प्रोफाइल' }}
-      />
-    </Tab.Navigator>
-  );
-}
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -127,8 +57,69 @@ export default function App() {
             </>
           ) : (
             <>
-              <Stack.Screen name="MainTabs">
-                {(props) => <MainTabs {...props} user={user} />}
+              {/* Stack-only navigation, no bottom tabs */}
+              <Stack.Screen name="Dashboard">
+                {(props) => (
+                  <DashboardScreen
+                    {...props}
+                    user={user}
+                  />
+                )}
+              </Stack.Screen>
+              <Stack.Screen
+                name="Advisory"
+                options={{
+                  title: 'Crop Advisory / फसल सलाह',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <AdvisoryScreen {...props} user={user} />}
+              </Stack.Screen>
+              <Stack.Screen
+                name="Soil"
+                options={{
+                  title: 'Soil Health / मिट्टी स्वास्थ्य',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <SoilHealthScreen {...props} user={user} />}
+              </Stack.Screen>
+              <Stack.Screen
+                name="Weather"
+                options={{
+                  title: 'Weather / मौसम',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <WeatherScreen {...props} user={user} />}
+              </Stack.Screen>
+              <Stack.Screen
+                name="Market"
+                options={{
+                  title: 'Market Prices / बाजार मूल्य',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <MarketPricesScreen {...props} user={user} />}
+              </Stack.Screen>
+              <Stack.Screen
+                name="Profile"
+                options={{
+                  title: 'Profile / प्रोफाइल',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <ProfileScreen {...props} user={user} />}
               </Stack.Screen>
               <Stack.Screen 
                 name="Feedback" 

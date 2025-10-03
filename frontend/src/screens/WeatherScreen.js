@@ -12,27 +12,63 @@ import {
   Text,
   Surface,
   ActivityIndicator,
-  Chip,
+  TextInput,
+  Button,
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../services/api';
 
 export default function WeatherScreen({ user }) {
-  const [weather, setWeather] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedLocation, setSelectedLocation] = useState(user?.location || '');
+  const [weather, setWeather] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentLocation, setCurrentLocation] = useState('');
 
-  const locations = ['Solapur', 'Pune', 'Nashik', 'Nagpur', 'Aurangabad'];
+  const API_KEY = 'b6ca262dc1d56e9480c61a34cad13d46';
 
   useEffect(() => {
-    loadWeather();
+    // Load default location weather on component mount
+    if (user?.location) {
+      setSearchQuery(user.location);
+      fetchWeatherData(user.location);
+    }
   }, []);
 
-  const loadWeather = async (location = null) => {
+  const fetchWeatherData = async (cityName) => {
+    if (!cityName.trim()) {
+      Alert.alert('Error', 'Please enter a city name');
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await ApiService.getWeather(location);
-      setWeather(response);
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cityName)}&appid=${API_KEY}&units=metric`
+      );
+      
+      if (!response.ok) {
+        throw new Error('City not found. Please check the spelling and try again.');
+      }
+      
+      const data = await response.json();
+      
+      // Transform API data to our format
+      const weatherData = {
+        id: data.id,
+        location: data.name,
+        temperature: `${Math.round(data.main.temp)}°C`,
+        humidity: `${data.main.humidity}%`,
+        rainfall: data.rain ? `${data.rain['1h'] || 0}mm` : '0mm',
+        description: data.weather[0].description,
+        windSpeed: `${data.wind.speed} m/s`,
+        pressure: `${data.main.pressure} hPa`,
+        visibility: `${data.visibility / 1000} km`,
+        country: data.sys.country,
+        icon: data.weather[0].icon
+      };
+      
+      setWeather(weatherData);
+      setCurrentLocation(cityName);
     } catch (error) {
       Alert.alert('Error', error.message);
     } finally {
@@ -40,9 +76,8 @@ export default function WeatherScreen({ user }) {
     }
   };
 
-  const handleLocationSelect = (location) => {
-    setSelectedLocation(location);
-    loadWeather(location);
+  const handleSearch = () => {
+    fetchWeatherData(searchQuery);
   };
 
   const getTemperatureColor = (temp) => {
@@ -68,11 +103,29 @@ export default function WeatherScreen({ user }) {
     return '#2196F3'; // Heavy rain - Blue
   };
 
-  const getWeatherIcon = (rainfall, humidity) => {
-    const rainfallNum = parseInt(rainfall);
-    if (rainfallNum > 10) return 'rainy';
-    if (humidity > 70) return 'cloudy';
-    return 'sunny';
+  const getWeatherIcon = (iconCode) => {
+    // Map OpenWeatherMap icon codes to Ionicons
+    const iconMap = {
+      '01d': 'sunny',
+      '01n': 'moon',
+      '02d': 'partly-sunny',
+      '02n': 'cloudy-night',
+      '03d': 'cloudy',
+      '03n': 'cloudy',
+      '04d': 'cloudy',
+      '04n': 'cloudy',
+      '09d': 'rainy',
+      '09n': 'rainy',
+      '10d': 'rainy',
+      '10n': 'rainy',
+      '11d': 'thunderstorm',
+      '11n': 'thunderstorm',
+      '13d': 'snow',
+      '13n': 'snow',
+      '50d': 'cloudy',
+      '50n': 'cloudy'
+    };
+    return iconMap[iconCode] || 'cloudy';
   };
 
   const getWeatherAdvice = (temp, rainfall, humidity) => {
@@ -112,13 +165,17 @@ export default function WeatherScreen({ user }) {
         <View style={styles.weatherHeader}>
           <View style={styles.locationContainer}>
             <Ionicons name="location" size={20} color="#4CAF50" />
-            <Text style={styles.locationText}>{weatherData.location}</Text>
+            <Text style={styles.locationText}>{weatherData.location}, {weatherData.country}</Text>
           </View>
           <Ionicons 
-            name={getWeatherIcon(weatherData.rainfall, weatherData.humidity)} 
+            name={getWeatherIcon(weatherData.icon)} 
             size={40} 
             color="#2196F3" 
           />
+        </View>
+
+        <View style={styles.weatherDescription}>
+          <Text style={styles.descriptionText}>{weatherData.description}</Text>
         </View>
 
         <View style={styles.weatherMetrics}>
@@ -133,17 +190,6 @@ export default function WeatherScreen({ user }) {
             </Text>
           </Surface>
 
-          {/* Rainfall */}
-          <Surface style={styles.metricCard} elevation={2}>
-            <View style={styles.metricHeader}>
-              <Ionicons name="rainy" size={20} color={getRainfallColor(weatherData.rainfall)} />
-              <Text style={styles.metricTitle}>Rainfall</Text>
-            </View>
-            <Text style={[styles.metricValue, { color: getRainfallColor(weatherData.rainfall) }]}>
-              {weatherData.rainfall}
-            </Text>
-          </Surface>
-
           {/* Humidity */}
           <Surface style={styles.metricCard} elevation={2}>
             <View style={styles.metricHeader}>
@@ -153,6 +199,28 @@ export default function WeatherScreen({ user }) {
             <Text style={[styles.metricValue, { color: getHumidityColor(weatherData.humidity) }]}>
               {weatherData.humidity}
             </Text>
+          </Surface>
+
+          {/* Wind Speed */}
+          <Surface style={styles.metricCard} elevation={2}>
+            <View style={styles.metricHeader}>
+              <Ionicons name="leaf" size={20} color="#4CAF50" />
+              <Text style={styles.metricTitle}>Wind Speed</Text>
+            </View>
+            <Text style={[styles.metricValue, { color: '#4CAF50' }]}>
+              {weatherData.windSpeed}
+            </Text>
+          </Surface>
+        </View>
+
+        <View style={styles.additionalMetrics}>
+          <Surface style={styles.additionalCard} elevation={1}>
+            <Text style={styles.additionalLabel}>Pressure</Text>
+            <Text style={styles.additionalValue}>{weatherData.pressure}</Text>
+          </Surface>
+          <Surface style={styles.additionalCard} elevation={1}>
+            <Text style={styles.additionalLabel}>Visibility</Text>
+            <Text style={styles.additionalValue}>{weatherData.visibility}</Text>
           </Surface>
         </View>
 
@@ -186,40 +254,38 @@ export default function WeatherScreen({ user }) {
         </View>
       </Surface>
 
-      {/* Location Filter */}
+      {/* Search Location */}
       <Card style={styles.filterCard} elevation={2}>
         <Card.Content>
-          <Title style={styles.filterTitle}>Select Location / स्थान चुनें</Title>
-          <View style={styles.chipContainer}>
-            <Chip
-              selected={selectedLocation === ''}
-              onPress={() => {
-                setSelectedLocation('');
-                loadWeather();
-              }}
-              style={[
-                styles.chip,
-                selectedLocation === '' && styles.selectedChip
-              ]}
-              textStyle={selectedLocation === '' && styles.selectedChipText}
-            >
-              All Locations
-            </Chip>
-            {locations.map((location) => (
-              <Chip
-                key={location}
-                selected={selectedLocation === location}
-                onPress={() => handleLocationSelect(location)}
-                style={[
-                  styles.chip,
-                  selectedLocation === location && styles.selectedChip
-                ]}
-                textStyle={selectedLocation === location && styles.selectedChipText}
-              >
-                {location}
-              </Chip>
-            ))}
-          </View>
+          <Title style={styles.filterTitle}>Search City / शहर खोजें</Title>
+          <TextInput
+            label="Enter city name"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            mode="outlined"
+            style={styles.searchInput}
+            placeholder="e.g., Mumbai, Delhi, Pune"
+            left={<TextInput.Icon icon="magnify" />}
+            right={
+              <TextInput.Icon 
+                icon="crosshairs-gps" 
+                onPress={() => {
+                  if (searchQuery.trim()) {
+                    fetchWeatherData(searchQuery);
+                  }
+                }}
+              />
+            }
+          />
+          <Button
+            mode="contained"
+            onPress={handleSearch}
+            style={styles.searchButton}
+            disabled={loading || !searchQuery.trim()}
+            contentStyle={styles.buttonContent}
+          >
+            {loading ? <ActivityIndicator color="#fff" /> : 'Get Weather'}
+          </Button>
         </Card.Content>
       </Card>
 
@@ -231,8 +297,8 @@ export default function WeatherScreen({ user }) {
         </View>
       )}
 
-      {/* Weather Cards */}
-      {!loading && weather.map(renderWeatherCard)}
+      {/* Weather Card */}
+      {!loading && weather && renderWeatherCard(weather)}
 
       {/* General Weather Tips */}
       <Card style={styles.tipsCard} elevation={2}>
@@ -329,20 +395,44 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 15,
   },
-  chipContainer: {
+  searchInput: {
+    marginBottom: 15,
+  },
+  searchButton: {
+    marginTop: 5,
+  },
+  buttonContent: {
+    paddingVertical: 8,
+  },
+  weatherDescription: {
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  descriptionText: {
+    fontSize: 16,
+    color: '#666',
+    textTransform: 'capitalize',
+  },
+  additionalMetrics: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 15,
   },
-  chip: {
-    marginRight: 8,
-    marginBottom: 8,
-    backgroundColor: '#E0E0E0',
+  additionalCard: {
+    width: '48%',
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
   },
-  selectedChip: {
-    backgroundColor: '#2196F3',
+  additionalLabel: {
+    fontSize: 10,
+    color: '#666',
+    marginBottom: 5,
   },
-  selectedChipText: {
-    color: '#fff',
+  additionalValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
   },
   loadingContainer: {
     alignItems: 'center',

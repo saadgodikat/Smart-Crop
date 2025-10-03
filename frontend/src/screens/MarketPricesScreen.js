@@ -12,7 +12,9 @@ import {
   Text,
   Surface,
   ActivityIndicator,
-  Chip,
+  Menu,
+  Button,
+  Divider,
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../services/api';
@@ -22,9 +24,11 @@ export default function MarketPricesScreen({ user }) {
   const [loading, setLoading] = useState(true);
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedCrop, setSelectedCrop] = useState('');
+  const [locationMenuVisible, setLocationMenuVisible] = useState(false);
+  const [cropMenuVisible, setCropMenuVisible] = useState(false);
 
-  const locations = ['Solapur', 'Pune', 'Nashik', 'Nagpur', 'Aurangabad'];
-  const crops = ['Chickpea', 'Wheat', 'Rice', 'Maize', 'Groundnut', 'Soybean', 'Cotton'];
+  const locations = ['All Locations', 'Solapur', 'Pune', 'Nashik', 'Nagpur', 'Aurangabad'];
+  const crops = ['All Crops', 'Chickpea', 'Wheat', 'Rice', 'Maize', 'Groundnut', 'Soybean', 'Cotton'];
 
   useEffect(() => {
     loadMarketPrices();
@@ -43,14 +47,16 @@ export default function MarketPricesScreen({ user }) {
   };
 
   const handleLocationSelect = (location) => {
-    const newLocation = selectedLocation === location ? '' : location;
+    const newLocation = location === 'All Locations' ? '' : location;
     setSelectedLocation(newLocation);
+    setLocationMenuVisible(false);
     loadMarketPrices(newLocation, selectedCrop);
   };
 
   const handleCropSelect = (crop) => {
-    const newCrop = selectedCrop === crop ? '' : crop;
+    const newCrop = crop === 'All Crops' ? '' : crop;
     setSelectedCrop(newCrop);
+    setCropMenuVisible(false);
     loadMarketPrices(selectedLocation, newCrop);
   };
 
@@ -190,63 +196,55 @@ export default function MarketPricesScreen({ user }) {
           
           {/* Location Filter */}
           <Text style={styles.filterSubtitle}>Location / स्थान:</Text>
-          <View style={styles.chipContainer}>
-            <Chip
-              selected={selectedLocation === ''}
-              onPress={() => handleLocationSelect('')}
-              style={[
-                styles.chip,
-                selectedLocation === '' && styles.selectedChip
-              ]}
-              textStyle={selectedLocation === '' && styles.selectedChipText}
-            >
-              All Locations
-            </Chip>
-            {locations.map((location) => (
-              <Chip
-                key={location}
-                selected={selectedLocation === location}
-                onPress={() => handleLocationSelect(location)}
-                style={[
-                  styles.chip,
-                  selectedLocation === location && styles.selectedChip
-                ]}
-                textStyle={selectedLocation === location && styles.selectedChipText}
+          <Menu
+            visible={locationMenuVisible}
+            onDismiss={() => setLocationMenuVisible(false)}
+            anchor={
+              <Button
+                mode="outlined"
+                onPress={() => setLocationMenuVisible(true)}
+                style={styles.dropdownButton}
+                contentStyle={styles.dropdownContent}
+                labelStyle={styles.dropdownLabel}
               >
-                {location}
-              </Chip>
+                {selectedLocation || 'All Locations'}
+              </Button>
+            }
+          >
+            {locations.map((location) => (
+              <Menu.Item
+                key={location}
+                onPress={() => handleLocationSelect(location)}
+                title={location}
+              />
             ))}
-          </View>
+          </Menu>
 
           {/* Crop Filter */}
           <Text style={styles.filterSubtitle}>Crop / फसल:</Text>
-          <View style={styles.chipContainer}>
-            <Chip
-              selected={selectedCrop === ''}
-              onPress={() => handleCropSelect('')}
-              style={[
-                styles.chip,
-                selectedCrop === '' && styles.selectedChip
-              ]}
-              textStyle={selectedCrop === '' && styles.selectedChipText}
-            >
-              All Crops
-            </Chip>
-            {crops.map((crop) => (
-              <Chip
-                key={crop}
-                selected={selectedCrop === crop}
-                onPress={() => handleCropSelect(crop)}
-                style={[
-                  styles.chip,
-                  selectedCrop === crop && styles.selectedChip
-                ]}
-                textStyle={selectedCrop === crop && styles.selectedChipText}
+          <Menu
+            visible={cropMenuVisible}
+            onDismiss={() => setCropMenuVisible(false)}
+            anchor={
+              <Button
+                mode="outlined"
+                onPress={() => setCropMenuVisible(true)}
+                style={styles.dropdownButton}
+                contentStyle={styles.dropdownContent}
+                labelStyle={styles.dropdownLabel}
               >
-                {crop}
-              </Chip>
+                {selectedCrop || 'All Crops'}
+              </Button>
+            }
+          >
+            {crops.map((crop) => (
+              <Menu.Item
+                key={crop}
+                onPress={() => handleCropSelect(crop)}
+                title={crop}
+              />
             ))}
-          </View>
+          </Menu>
         </Card.Content>
       </Card>
 
@@ -362,21 +360,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 10,
   },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  dropdownButton: {
     marginBottom: 10,
+    justifyContent: 'flex-start',
   },
-  chip: {
-    marginRight: 8,
-    marginBottom: 8,
-    backgroundColor: '#E0E0E0',
+  dropdownContent: {
+    justifyContent: 'flex-start',
   },
-  selectedChip: {
-    backgroundColor: '#FF9800',
-  },
-  selectedChipText: {
-    color: '#fff',
+  dropdownLabel: {
+    textAlign: 'left',
   },
   loadingContainer: {
     alignItems: 'center',
