@@ -18,8 +18,10 @@ import {
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../services/api';
+import { getTranslation } from '../utils/translations';
 
-export default function WeatherScreen({ user }) {
+export default function WeatherScreen({ user, language = 'en' }) {
+  const t = (key) => getTranslation(language, key);
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(false);  
   const [searchQuery, setSearchQuery] = useState('');
@@ -195,7 +197,7 @@ export default function WeatherScreen({ user }) {
           <Surface style={styles.metricCard} elevation={2}>
             <View style={styles.metricHeader}>
               <Ionicons name="thermometer" size={20} color={getTemperatureColor(weatherData.temperature)} />
-              <Text style={styles.metricTitle}>Temperature</Text>
+              <Text style={styles.metricTitle}>{t('temperature')}</Text>
             </View>
             <Text style={[styles.metricValue, { color: getTemperatureColor(weatherData.temperature) }]}>
               {weatherData.temperature}
@@ -206,7 +208,7 @@ export default function WeatherScreen({ user }) {
           <Surface style={styles.metricCard} elevation={2}>
             <View style={styles.metricHeader}>
               <Ionicons name="water" size={20} color={getHumidityColor(weatherData.humidity)} />
-              <Text style={styles.metricTitle}>Humidity</Text>
+              <Text style={styles.metricTitle}>{t('humidity')}</Text>
             </View>
             <Text style={[styles.metricValue, { color: getHumidityColor(weatherData.humidity) }]}>
               {weatherData.humidity}
@@ -217,7 +219,7 @@ export default function WeatherScreen({ user }) {
           <Surface style={styles.metricCard} elevation={2}>
             <View style={styles.metricHeader}>
               <Ionicons name="leaf" size={20} color="#4CAF50" />
-              <Text style={styles.metricTitle}>Wind Speed</Text>
+              <Text style={styles.metricTitle}>{t('windSpeed')}</Text>
             </View>
             <Text style={[styles.metricValue, { color: '#4CAF50' }]}>
               {weatherData.windSpeed}
@@ -227,11 +229,11 @@ export default function WeatherScreen({ user }) {
 
         <View style={styles.additionalMetrics}>
           <Surface style={styles.additionalCard} elevation={1}>
-            <Text style={styles.additionalLabel}>Pressure</Text>
+            <Text style={styles.additionalLabel}>{t('pressure')}</Text>
             <Text style={styles.additionalValue}>{weatherData.pressure}</Text>
           </Surface>
           <Surface style={styles.additionalCard} elevation={1}>
-            <Text style={styles.additionalLabel}>Visibility</Text>
+            <Text style={styles.additionalLabel}>{t('visibility')}</Text>
             <Text style={styles.additionalValue}>{weatherData.visibility}</Text>
           </Surface>
         </View>
@@ -240,7 +242,7 @@ export default function WeatherScreen({ user }) {
         <Surface style={styles.adviceCard} elevation={1}>
           <View style={styles.adviceHeader}>
             <Ionicons name="bulb" size={20} color="#FF9800" />
-            <Text style={styles.adviceTitle}>Farming Advice</Text>
+            <Text style={styles.adviceTitle}>{t('farmingAdvice')}</Text>
           </View>
           {getWeatherAdvice(weatherData.temperature, weatherData.rainfall, weatherData.humidity).map((tip, index) => (
             <Text key={index} style={styles.adviceText}>{tip}</Text>

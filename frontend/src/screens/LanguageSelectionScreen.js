@@ -21,21 +21,18 @@ export default function LanguageSelectionScreen({ onLanguageSelect }) {
       code: 'en',
       name: 'English',
       nativeName: 'English',
-      icon: '🇺🇸',
       color: '#2196F3',
     },
     {
       code: 'hi',
       name: 'Hindi',
       nativeName: 'हिंदी',
-      icon: '🇮🇳',
       color: '#FF9800',
     },
     {
       code: 'pa',
       name: 'Punjabi',
       nativeName: 'ਪੰਜਾਬੀ',
-      icon: '🇮🇳',
       color: '#4CAF50',
     },
   ];
@@ -65,7 +62,6 @@ export default function LanguageSelectionScreen({ onLanguageSelect }) {
             onPress={() => handleLanguageSelect(language.code)}
           >
             <Card.Content style={styles.cardContent}>
-              <Text style={styles.flagIcon}>{language.icon}</Text>
               <Title style={[styles.languageName, { color: language.color }]}>
                 {language.name}
               </Title>
@@ -130,18 +126,16 @@ const styles = StyleSheet.create({
     paddingVertical: 25,
     paddingHorizontal: 20,
   },
-  flagIcon: {
-    fontSize: 40,
-    marginBottom: 10,
-  },
+
   languageName: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 8,
   },
   nativeName: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
   },
   infoCard: {
     borderRadius: 12,

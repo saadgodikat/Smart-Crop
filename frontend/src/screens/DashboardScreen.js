@@ -100,7 +100,7 @@ export default function DashboardScreen({ navigation, user, language = 'en' }) {
               {t('welcome')}, {user?.name || 'Farmer'}!
             </Title>
             <Paragraph style={styles.welcomeSubtitle}>
-              Smart farming solutions at your fingertips.
+              {t('smartFarmingSolutions')}
             </Paragraph>
           </View>
         </View>
@@ -158,7 +158,7 @@ export default function DashboardScreen({ navigation, user, language = 'en' }) {
       {/* Tips Section */}
       <Card style={styles.tipsCard}>
         <Card.Content>
-          <Title style={styles.tipsTitle}>💡 Farming Tips / कृषि सुझाव</Title>
+          <Title style={styles.tipsTitle}>💡 {t('farmingTips')}</Title>
           <Paragraph style={styles.tipText}>
             • Monitor soil health regularly for better crop yields
           </Paragraph>

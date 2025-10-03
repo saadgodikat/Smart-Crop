@@ -4,11 +4,11 @@ A full-stack prototype mobile application for farmers in India to get crop advis
 
 ## 🌾 Features
 
-- **Crop Advisory**: Get personalized crop recommendations based on soil type and previous crops
-- **Soil Health**: Monitor soil health parameters and get improvement suggestions
-- **Weather Information**: Access current weather conditions and farming advice
-- **Market Prices**: Track latest crop prices in your area
-- **User Profile**: Manage your farming profile and preferences
+- **Soil Health Analysis**: Comprehensive soil testing with pH, nutrients, and health scoring
+- **Smart Crop Advisory**: AI-powered crop recommendations based on soil health data
+- **Real-time Market Prices**: Live crop prices from Government of India API
+- **Weather Information**: Location-based weather data and farming advice
+- **User Profile Management**: Streamlined profile with essential information
 - **Feedback System**: Submit feedback and get support
 - **Bilingual Support**: English and Hindi interface
 
@@ -23,20 +23,25 @@ A full-stack prototype mobile application for farmers in India to get crop advis
 ### Frontend
 - **React Native** with Expo
 - **React Navigation** for screen navigation
-- **React Native Paper** for UI components
-- **Vector Icons** for icons
+- **React Native Paper** for Material Design UI
+- **Government API Integration** for market prices
+- **Global State Management** for data sharing
 
-## 📱 Screens
+## 📱 Screens & Workflow
 
 1. **Login/Signup** - User authentication
 2. **Dashboard** - Main navigation hub
-3. **Crop Advisory** - Get crop recommendations
-4. **Soil Health** - Soil information and suggestions
-5. **Weather** - Weather data and farming advice
-6. **Market Prices** - Crop price information
-7. **Profile** - User profile management
+3. **Soil Health** - Comprehensive soil analysis (REQUIRED FIRST)
+4. **Crop Advisory** - Smart recommendations based on soil data
+5. **Market Prices** - Real-time prices with state/city filters
+6. **Weather** - Weather data and farming advice
+7. **Profile** - Streamlined user profile
 8. **Feedback** - Submit feedback and support
 9. **Help** - Help and support information
+
+### 🔄 **New Workflow**
+**Step 1**: Check Soil Health → Enter soil parameters → Get analysis → Data saved
+**Step 2**: Get Crop Advisory → System uses saved soil data → Enter region → Get recommendations
 
 ## 🚀 Quick Start
 
@@ -127,45 +132,53 @@ Or create a new account using the signup screen.
 - `POST /api/login` - User login
 - `POST /api/signup` - User registration
 
-### Data
-- `POST /api/advisory` - Get crop advisory
-- `GET /api/soil` - Get soil health data
+### Internal APIs
 - `GET /api/weather` - Get weather data
-- `GET /api/market` - Get market prices
 - `GET /api/profile/:userId` - Get user profile
 - `POST /api/feedback` - Submit feedback
 - `GET /api/health` - Health check
+
+### External APIs
+- **Government of India Data API** - Real-time market prices
+- **API Key**: `579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b`
+- **Endpoint**: `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070`
 
 ## 🎨 UI Features
 
 - **Material Design** components using React Native Paper
 - **Bilingual Interface** (English + Hindi)
 - **Bottom Tab Navigation** for easy access
-- **Color-coded Information** for better readability
+- **Color-coded Health Indicators** with progress bars
+- **Cascading Dropdowns** for state/city selection
+- **Real-time Loading States** and comprehensive error handling
 - **Responsive Design** for different screen sizes
-- **Loading States** and error handling
 
-## 📊 Sample Data
+## 📊 Key Features
 
-### Crop Advisory Examples
-- **Black soil + Cotton** → Chickpea recommendation
-- **Sandy soil + Wheat** → Groundnut recommendation
-- **Clay soil + Rice** → Maize recommendation
+### Soil Health Analysis
+- **6 Parameters**: pH, Nitrogen, Phosphorus, Potassium, Organic Matter, Moisture
+- **Smart Scoring**: 0-100% health score for each parameter
+- **Visual Indicators**: Color-coded progress bars (Red/Orange/Green)
+- **Overall Health**: Calculated average of all parameters
+- **Session Storage**: Data saved until app refresh
 
-### Soil Health Data
-- **pH levels** with color-coded indicators
-- **Organic content** assessments
-- **Improvement suggestions** for each soil type
+### Smart Crop Recommendations
+- **pH-based Algorithm**: Crops scored by soil pH compatibility
+- **Comprehensive Data**: Fertilizer needs, water requirements, seasons
+- **Rating System**: Excellent/Good/Fair/Poor ratings
+- **10 Crop Database**: Wheat, Rice, Maize, Cotton, Sorghum, etc.
+
+### Market Prices Integration
+- **20 States**: Complete coverage of major Indian states
+- **150+ Cities**: 6-8 cities per state for precise location
+- **Live Data**: Real-time prices from Government API
+- **Price Range**: Modal, minimum, and maximum prices
+- **50+ Commodities**: Vegetables, fruits, grains, spices
 
 ### Weather Information
-- **Temperature, rainfall, humidity** data
-- **Farming advice** based on weather conditions
-- **Location-based** weather information
-
-### Market Prices
-- **Real-time crop prices** from different locations
-- **Price analysis** and trends
-- **Location-wise** price comparisons
+- **Location-based**: Weather data for major Indian cities
+- **Farming Advice**: Weather-specific agricultural recommendations
+- **Key Metrics**: Temperature, rainfall, humidity
 
 ## 🔧 Configuration
 
@@ -189,6 +202,13 @@ Update API URL in `frontend/src/services/api.js`:
 const API_BASE_URL = 'http://localhost:3000/api';
 ```
 
+### Market Prices API Configuration
+The app uses Government of India Open Data API:
+```javascript
+const API_KEY = '579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b';
+const API_URL = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070';
+```
+
 For physical device testing, replace `localhost` with your computer's IP address.
 
 ## 🐛 Troubleshooting
@@ -205,12 +225,22 @@ For physical device testing, replace `localhost` with your computer's IP address
    - For mobile device, use IP address instead of localhost
    - Ensure both devices are on same network
 
-3. **Expo App Issues**
+3. **Market Prices Not Loading**
+   - Check internet connection
+   - Verify Government API is accessible
+   - Try different commodity names (exact spelling matters)
+
+4. **Crop Advisory Shows 'No Soil Data'**
+   - Complete soil health analysis first
+   - Ensure all soil parameters are entered
+   - Check if app was refreshed (data clears on refresh)
+
+5. **Expo App Issues**
    - Clear Expo cache: `expo start --clear`
    - Restart Metro bundler
    - Check Expo Go app version
 
-4. **Dependencies Issues**
+6. **Dependencies Issues**
    - Delete `node_modules` and `package-lock.json`
    - Run `npm install` again
    - Check Node.js version compatibility
@@ -220,23 +250,31 @@ For physical device testing, replace `localhost` with your computer's IP address
 ### Test Scenarios
 
 1. **User Registration**
-   - Create new account with different soil types
+   - Create new account with phone/password
    - Test validation for required fields
 
-2. **Crop Advisory**
-   - Test different soil type and crop combinations
-   - Verify recommendations are returned
+2. **Soil Health Analysis**
+   - Enter soil parameters (pH: 6.8, N: 25, P: 20, K: 150, OM: 3.5, Moisture: 25)
+   - Verify color-coded results and overall health score
+   - Check data persistence until app refresh
 
-3. **Data Screens**
-   - Check soil health, weather, and market price data
-   - Test filtering and search functionality
+3. **Crop Advisory Workflow**
+   - Try without soil data (should show error)
+   - Complete soil health first, then get recommendations
+   - Test different regions for varied results
 
-4. **Profile Management**
-   - Update profile information
+4. **Market Prices**
+   - Test state/city cascading dropdowns
+   - Search for vegetables: Tomato, Onion, Potato
+   - Verify real-time price data display
+
+5. **Profile Management**
+   - Check streamlined profile (name, phone, location only)
    - Test logout functionality
 
-5. **Feedback System**
-   - Submit feedback and verify it's saved
+6. **Data Persistence**
+   - Verify soil data clears on app refresh
+   - Test cross-screen data sharing
 
 ## 🚀 Deployment
 
@@ -271,14 +309,16 @@ For support and questions:
 
 ## 🔮 Future Enhancements
 
-- AI/ML integration for better predictions
-- Push notifications for weather alerts
-- Offline mode support
-- Multi-language support (more Indian languages)
-- Integration with IoT sensors
-- Advanced analytics dashboard
-- Farmer community features
-- Government scheme integration
+- **AI/ML Integration**: Advanced crop prediction algorithms
+- **IoT Sensor Integration**: Real-time soil monitoring
+- **Persistent Storage**: User preference for data retention
+- **Push Notifications**: Weather alerts and farming reminders
+- **Offline Mode**: Core features without internet
+- **Multi-language Support**: Regional Indian languages
+- **Advanced Analytics**: Farming performance dashboard
+- **Community Features**: Farmer networking and knowledge sharing
+- **Government Schemes**: Integration with agricultural subsidies
+- **Crop Disease Detection**: Image-based disease identification
 
 ---
 

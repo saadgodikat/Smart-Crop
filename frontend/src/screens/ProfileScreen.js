@@ -17,7 +17,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../services/api';
 
-export default function ProfileScreen({ user, navigation }) {
+export default function ProfileScreen({ user, navigation, onLogout }) {
   const [profile, setProfile] = useState(user);
   const [loading, setLoading] = useState(false);
 
@@ -49,9 +49,12 @@ export default function ProfileScreen({ user, navigation }) {
           text: 'Logout', 
           style: 'destructive',
           onPress: () => {
-            // This would be handled by the parent component
-            // For now, we'll just show an alert
-            Alert.alert('Logged Out', 'You have been logged out successfully');
+            console.log('Logout button pressed, onLogout:', typeof onLogout);
+            if (onLogout) {
+              onLogout();
+            } else {
+              Alert.alert('Error', 'Logout function not available');
+            }
           }
         }
       ]
@@ -126,25 +129,7 @@ export default function ProfileScreen({ user, navigation }) {
             </View>
           </View>
 
-          <View style={styles.detailRow}>
-            <View style={styles.detailIcon}>
-              <Ionicons name="earth" size={20} color="#4CAF50" />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Soil Type</Text>
-              <Text style={styles.detailValue}>{profile?.soil_type || 'Not specified'}</Text>
-            </View>
-          </View>
 
-          <View style={styles.detailRow}>
-            <View style={styles.detailIcon}>
-              <Ionicons name="leaf" size={20} color="#4CAF50" />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Last Crop</Text>
-              <Text style={styles.detailValue}>{profile?.last_crop || 'Not specified'}</Text>
-            </View>
-          </View>
         </Card.Content>
       </Card>
 
@@ -248,9 +233,7 @@ export default function ProfileScreen({ user, navigation }) {
           <Paragraph style={styles.tipText}>
             • Keep your profile updated with current farming information
           </Paragraph>
-          <Paragraph style={styles.tipText}>
-            • Accurate soil type helps in better crop recommendations
-          </Paragraph>
+
           <Paragraph style={styles.tipText}>
             • Share feedback to help improve the app
           </Paragraph>

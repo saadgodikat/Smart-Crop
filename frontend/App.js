@@ -39,6 +39,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    console.log('Logout function called');
     setUser(null);
     setIsLoggedIn(false);
   };
@@ -131,7 +132,7 @@ export default function App() {
                   headerTintColor: '#fff',
                 }}
               >
-                {(props) => <ProfileScreen {...props} user={user} language={selectedLanguage} />}
+                {(props) => <ProfileScreen {...props} user={user} language={selectedLanguage} onLogout={handleLogout} />}
               </Stack.Screen>
               <Stack.Screen 
                 name="Feedback" 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -11,114 +11,119 @@ import {
   Paragraph,
   Text,
   Surface,
-  ActivityIndicator,
-  Chip,
+  TextInput,
+  Button,
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
-import ApiService from '../services/api';
+import { getTranslation } from '../utils/translations';
 
-export default function SoilHealthScreen({ user }) {
-  const [soilHealth, setSoilHealth] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedSoilType, setSelectedSoilType] = useState(user?.soil_type || '');
+export default function SoilHealthScreen({ user, language = 'en' }) {
+  const t = (key) => getTranslation(language, key);
+  const [ph, setPh] = useState('');
+  const [nitrogen, setNitrogen] = useState('');
+  const [phosphorus, setPhosphorus] = useState('');
+  const [potassium, setPotassium] = useState('');
+  const [organicMatter, setOrganicMatter] = useState('');
+  const [moisture, setMoisture] = useState('');
+  const [analysis, setAnalysis] = useState(null);
 
-  // Recommendation flow removed from Soil Health as requested
+  const analyzeSoil = () => {
+    const phVal = parseFloat(ph);
+    const nVal = parseFloat(nitrogen);
+    const pVal = parseFloat(phosphorus);
+    const kVal = parseFloat(potassium);
+    const omVal = parseFloat(organicMatter);
+    const moistVal = parseFloat(moisture);
 
-  const soilTypes = ['black', 'sandy', 'clay', 'loamy', 'red'];
-
-  useEffect(() => {
-    loadSoilHealth();
-  }, []);
-
-  const loadSoilHealth = async (soilType = null) => {
-    setLoading(true);
-    try {
-      const response = await ApiService.getSoilHealth(soilType);
-      setSoilHealth(response);
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setLoading(false);
+    if (!phVal || !nVal || !pVal || !kVal || !omVal || !moistVal) {
+      Alert.alert('Error', 'Please enter all values');
+      return;
     }
+
+    const results = {
+      ph: analyzePH(phVal),
+      nitrogen: analyzeNutrient(nVal, 'nitrogen'),
+      phosphorus: analyzeNutrient(pVal, 'phosphorus'),
+      potassium: analyzeNutrient(kVal, 'potassium'),
+      organicMatter: analyzeOrganicMatter(omVal),
+      moisture: analyzeMoisture(moistVal),
+      overallHealth: 0
+    };
+
+    // Calculate overall health percentage
+    const scores = [results.ph.score, results.nitrogen.score, results.phosphorus.score, 
+                   results.potassium.score, results.organicMatter.score, results.moisture.score];
+    results.overallHealth = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    
+    // Save soil health data globally (clears on app refresh)
+    global.soilHealthData = {
+      ph: phVal,
+      nitrogen: nVal,
+      phosphorus: pVal,
+      potassium: kVal,
+      organicMatter: omVal,
+      moisture: moistVal,
+      analysis: results,
+      timestamp: new Date().toISOString()
+    };
+    
+    Alert.alert('Success', 'Soil health data saved! You can now get crop recommendations.');
+    
+    setAnalysis(results);
   };
 
-  const handleSoilTypeSelect = (soilType) => {
-    setSelectedSoilType(soilType);
-    loadSoilHealth(soilType);
+  const analyzePH = (value) => {
+    if (value < 5.5) return { level: 'Very Acidic', score: 30, color: '#F44336', percentage: 30 };
+    if (value < 6.0) return { level: 'Acidic', score: 50, color: '#FF5722', percentage: 50 };
+    if (value < 6.5) return { level: 'Slightly Acidic', score: 75, color: '#FF9800', percentage: 75 };
+    if (value <= 7.5) return { level: 'Optimal', score: 95, color: '#4CAF50', percentage: 95 };
+    if (value <= 8.0) return { level: 'Slightly Alkaline', score: 75, color: '#FF9800', percentage: 75 };
+    if (value <= 8.5) return { level: 'Alkaline', score: 50, color: '#FF5722', percentage: 50 };
+    return { level: 'Very Alkaline', score: 30, color: '#F44336', percentage: 30 };
   };
 
-  const getPHColor = (ph) => {
-    if (ph < 6.0) return '#F44336'; // Acidic - Red
-    if (ph < 6.5) return '#FF9800'; // Slightly Acidic - Orange
-    if (ph <= 7.5) return '#4CAF50'; // Neutral - Green
-    if (ph <= 8.0) return '#FF9800'; // Slightly Alkaline - Orange
-    return '#F44336'; // Alkaline - Red
+  const analyzeNutrient = (value, type) => {
+    const ranges = {
+      nitrogen: { low: 20, optimal: 40, high: 60 },
+      phosphorus: { low: 15, optimal: 30, high: 50 },
+      potassium: { low: 100, optimal: 200, high: 300 }
+    };
+    
+    const range = ranges[type];
+    if (value < range.low * 0.5) return { level: 'Very Low', score: 25, color: '#F44336', percentage: 25 };
+    if (value < range.low) return { level: 'Low', score: 50, color: '#FF9800', percentage: 50 };
+    if (value <= range.optimal) return { level: 'Moderate', score: 80, color: '#4CAF50', percentage: 80 };
+    if (value <= range.high) return { level: 'High', score: 90, color: '#4CAF50', percentage: 90 };
+    return { level: 'Very High', score: 70, color: '#FF9800', percentage: 70 };
   };
 
-  const getPHStatus = (ph) => {
-    if (ph < 6.0) return 'Acidic';
-    if (ph < 6.5) return 'Slightly Acidic';
-    if (ph <= 7.5) return 'Optimal';
-    if (ph <= 8.0) return 'Slightly Alkaline';
-    return 'Alkaline';
+  const analyzeOrganicMatter = (value) => {
+    if (value < 1) return { level: 'Very Low', score: 30, color: '#F44336', percentage: 30 };
+    if (value < 2) return { level: 'Low', score: 50, color: '#FF9800', percentage: 50 };
+    if (value <= 4) return { level: 'Moderate', score: 80, color: '#4CAF50', percentage: 80 };
+    if (value <= 6) return { level: 'High', score: 95, color: '#4CAF50', percentage: 95 };
+    return { level: 'Very High', score: 85, color: '#4CAF50', percentage: 85 };
   };
 
-  const getOrganicContentColor = (content) => {
-    switch (content.toLowerCase()) {
-      case 'high': return '#4CAF50';
-      case 'medium': return '#FF9800';
-      case 'low': return '#F44336';
-      default: return '#666';
-    }
+  const analyzeMoisture = (value) => {
+    if (value < 10) return { level: 'Very Dry', score: 25, color: '#F44336', percentage: 25 };
+    if (value < 20) return { level: 'Dry', score: 50, color: '#FF9800', percentage: 50 };
+    if (value <= 40) return { level: 'Optimal', score: 90, color: '#4CAF50', percentage: 90 };
+    if (value <= 60) return { level: 'Moist', score: 80, color: '#4CAF50', percentage: 80 };
+    return { level: 'Waterlogged', score: 40, color: '#FF5722', percentage: 40 };
   };
 
-
-  const renderSoilHealthCard = (soil) => (
-    <Card key={soil.id} style={styles.soilCard} elevation={3}>
-      <Card.Content>
-        <View style={styles.soilHeader}>
-          <Surface style={[styles.soilTypeBadge, { backgroundColor: '#4CAF50' + '20' }]} elevation={1}>
-            <Text style={styles.soilTypeText}>{soil.soil_type.toUpperCase()}</Text>
-          </Surface>
-        </View>
-
-        <View style={styles.metricsContainer}>
-          {/* pH Level */}
-          <Surface style={styles.metricCard} elevation={2}>
-            <View style={styles.metricHeader}>
-              <Ionicons name="flask" size={20} color={getPHColor(soil.ph)} />
-              <Text style={styles.metricTitle}>pH Level</Text>
-            </View>
-            <Text style={[styles.metricValue, { color: getPHColor(soil.ph) }]}>
-              {soil.ph}
-            </Text>
-            <Text style={[styles.metricStatus, { color: getPHColor(soil.ph) }]}>
-              {getPHStatus(soil.ph)}
-            </Text>
-          </Surface>
-
-          {/* Organic Content */}
-          <Surface style={styles.metricCard} elevation={2}>
-            <View style={styles.metricHeader}>
-              <Ionicons name="leaf" size={20} color={getOrganicContentColor(soil.organic_content)} />
-              <Text style={styles.metricTitle}>Organic Content</Text>
-            </View>
-            <Text style={[styles.metricValue, { color: getOrganicContentColor(soil.organic_content) }]}>
-              {soil.organic_content}
-            </Text>
-          </Surface>
-        </View>
-
-        {/* Suggestions */}
-        <Surface style={styles.suggestionCard} elevation={1}>
-          <View style={styles.suggestionHeader}>
-            <Ionicons name="bulb" size={20} color="#FF9800" />
-            <Text style={styles.suggestionTitle}>Recommendations</Text>
-          </View>
-          <Text style={styles.suggestionText}>{soil.suggestion}</Text>
-        </Surface>
-      </Card.Content>
-    </Card>
+  const renderAnalysisCard = (title, data, unit = '') => (
+    <Surface style={styles.analysisCard} elevation={2}>
+      <View style={styles.analysisHeader}>
+        <Text style={styles.analysisTitle}>{title}</Text>
+        <Text style={[styles.analysisPercentage, { color: data.color }]}>{data.percentage}%</Text>
+      </View>
+      <View style={styles.progressBar}>
+        <View style={[styles.progressFill, { width: `${data.percentage}%`, backgroundColor: data.color }]} />
+      </View>
+      <Text style={[styles.analysisLevel, { color: data.color }]}>{data.level}</Text>
+    </Surface>
   );
 
   return (
@@ -128,63 +133,116 @@ export default function SoilHealthScreen({ user }) {
         <View style={styles.headerContent}>
           <Ionicons name="earth" size={40} color="#8BC34A" />
           <View style={styles.headerText}>
-            <Title style={styles.headerTitle}>Soil Health</Title>
-            <Title style={styles.headerTitleHindi}>मिट्टी स्वास्थ्य</Title>
+            <Title style={styles.headerTitle}>{t('soilHealth')}</Title>
             <Paragraph style={styles.headerSubtitle}>
-              Monitor soil health and get improvement suggestions
+              Enter soil parameters for detailed analysis
             </Paragraph>
           </View>
         </View>
       </Surface>
 
-      {/* Soil Type Filter */}
-      <Card style={styles.filterCard} elevation={2}>
+      {/* Input Form */}
+      <Card style={styles.formCard} elevation={2}>
         <Card.Content>
-          <Title style={styles.filterTitle}>Filter by Soil Type / मिट्टी के प्रकार से फ़िल्टर करें</Title>
-          <View style={styles.chipContainer}>
-            <Chip
-              selected={selectedSoilType === ''}
-              onPress={() => {
-                setSelectedSoilType('');
-                loadSoilHealth();
-              }}
-              style={[
-                styles.chip,
-                selectedSoilType === '' && styles.selectedChip
-              ]}
-              textStyle={selectedSoilType === '' && styles.selectedChipText}
-            >
-              All Types
-            </Chip>
-            {soilTypes.map((type) => (
-              <Chip
-                key={type}
-                selected={selectedSoilType === type}
-                onPress={() => handleSoilTypeSelect(type)}
-                style={[
-                  styles.chip,
-                  selectedSoilType === type && styles.selectedChip
-                ]}
-                textStyle={selectedSoilType === type && styles.selectedChipText}
-              >
-                {type}
-              </Chip>
-            ))}
-          </View>
+          <Title style={styles.formTitle}>Soil Parameters</Title>
+          
+          <TextInput
+            label="pH Value (4.0 - 9.0)"
+            value={ph}
+            onChangeText={setPh}
+            mode="outlined"
+            keyboardType="decimal-pad"
+            style={styles.input}
+            placeholder="e.g., 6.8"
+            left={<TextInput.Icon icon="flask" />}
+          />
+          
+          <TextInput
+            label="Nitrogen (N) - mg/kg"
+            value={nitrogen}
+            onChangeText={setNitrogen}
+            mode="outlined"
+            keyboardType="decimal-pad"
+            style={styles.input}
+            placeholder="e.g., 25"
+            left={<TextInput.Icon icon="leaf" />}
+          />
+          
+          <TextInput
+            label="Phosphorus (P) - mg/kg"
+            value={phosphorus}
+            onChangeText={setPhosphorus}
+            mode="outlined"
+            keyboardType="decimal-pad"
+            style={styles.input}
+            placeholder="e.g., 20"
+            left={<TextInput.Icon icon="leaf" />}
+          />
+          
+          <TextInput
+            label="Potassium (K) - mg/kg"
+            value={potassium}
+            onChangeText={setPotassium}
+            mode="outlined"
+            keyboardType="decimal-pad"
+            style={styles.input}
+            placeholder="e.g., 150"
+            left={<TextInput.Icon icon="leaf" />}
+          />
+          
+          <TextInput
+            label="Organic Matter - %"
+            value={organicMatter}
+            onChangeText={setOrganicMatter}
+            mode="outlined"
+            keyboardType="decimal-pad"
+            style={styles.input}
+            placeholder="e.g., 3.5"
+            left={<TextInput.Icon icon="compost" />}
+          />
+          
+          <TextInput
+            label="Moisture Content - %"
+            value={moisture}
+            onChangeText={setMoisture}
+            mode="outlined"
+            keyboardType="decimal-pad"
+            style={styles.input}
+            placeholder="e.g., 25"
+            left={<TextInput.Icon icon="water" />}
+          />
+          
+          <Button
+            mode="contained"
+            onPress={analyzeSoil}
+            style={styles.analyzeButton}
+            contentStyle={styles.buttonContent}
+          >
+            Analyze Soil Health
+          </Button>
         </Card.Content>
       </Card>
 
-
-      {/* Loading State */}
-      {loading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>Loading soil health data...</Text>
-        </View>
+      {/* Analysis Results */}
+      {analysis && (
+        <Card style={styles.resultsCard} elevation={3}>
+          <Card.Content>
+            <View style={styles.overallHealth}>
+              <Title style={styles.overallTitle}>Overall Soil Health</Title>
+              <Text style={[styles.overallScore, { color: analysis.overallHealth > 70 ? '#4CAF50' : analysis.overallHealth > 50 ? '#FF9800' : '#F44336' }]}>
+                {analysis.overallHealth}%
+              </Text>
+            </View>
+            
+            {renderAnalysisCard('pH Level', analysis.ph)}
+            {renderAnalysisCard('Nitrogen (N)', analysis.nitrogen, 'mg/kg')}
+            {renderAnalysisCard('Phosphorus (P)', analysis.phosphorus, 'mg/kg')}
+            {renderAnalysisCard('Potassium (K)', analysis.potassium, 'mg/kg')}
+            {renderAnalysisCard('Organic Matter', analysis.organicMatter, '%')}
+            {renderAnalysisCard('Moisture Content', analysis.moisture, '%')}
+          </Card.Content>
+        </Card>
       )}
-
-      {/* Soil Health Cards */}
-      {!loading && soilHealth.map(renderSoilHealthCard)}
 
 
       {/* General Tips */}
@@ -264,120 +322,92 @@ const styles = StyleSheet.create({
     color: '#8BC34A',
     marginBottom: 2,
   },
-  headerTitleHindi: {
-    fontSize: 16,
-    color: '#8BC34A',
-    marginBottom: 5,
-  },
+
   headerSubtitle: {
     fontSize: 12,
     color: '#666',
   },
-  filterCard: {
+  formCard: {
     margin: 15,
     marginTop: 0,
     borderRadius: 12,
   },
-  filterTitle: {
+  formTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 20,
+  },
+  input: {
+    marginBottom: 12,
+  },
+  analyzeButton: {
+    marginTop: 10,
+    backgroundColor: '#8BC34A',
+  },
+  buttonContent: {
+    paddingVertical: 8,
+  },
+  resultsCard: {
+    margin: 15,
+    marginTop: 0,
+    borderRadius: 12,
+    backgroundColor: '#F8F9FA',
+  },
+  overallHealth: {
+    alignItems: 'center',
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+  },
+  overallTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  overallScore: {
+    fontSize: 32,
+    fontWeight: 'bold',
+  },
+  analysisCard: {
+    padding: 12,
+    marginBottom: 10,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+  },
+  analysisHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  analysisTitle: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 15,
   },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  analysisPercentage: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  chip: {
-    marginRight: 8,
-    marginBottom: 8,
+  progressBar: {
+    height: 8,
     backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    marginBottom: 5,
   },
-  selectedChip: {
-    backgroundColor: '#8BC34A',
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
   },
-  selectedChipText: {
-    color: '#fff',
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    padding: 40,
-  },
-  loadingText: {
-    marginTop: 10,
-    color: '#666',
-  },
-  soilCard: {
-    margin: 15,
-    marginTop: 0,
-    borderRadius: 12,
-  },
-  soilHeader: {
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  soilTypeBadge: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  soilTypeText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#8BC34A',
-  },
-  metricsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-  metricCard: {
-    width: '48%',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  metricHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  metricTitle: {
+  analysisLevel: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#666',
-    marginLeft: 5,
+    textAlign: 'center',
   },
-  metricValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 2,
-  },
-  metricStatus: {
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  suggestionCard: {
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: '#FFF3E0',
-  },
-  suggestionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  suggestionTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#FF9800',
-    marginLeft: 5,
-  },
-  suggestionText: {
-    fontSize: 12,
-    color: '#666',
-    lineHeight: 16,
-  },
+
   tipsCard: {
     margin: 15,
     marginBottom: 15,

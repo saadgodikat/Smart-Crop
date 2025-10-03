@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -18,21 +18,35 @@ import {
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../services/api';
+import { getTranslation } from '../utils/translations';
 
-export default function AdvisoryScreen({ user }) {
-  const [inputPH, setInputPH] = useState('');
+export default function AdvisoryScreen({ user, language = 'en' }) {
+  const t = (key) => getTranslation(language, key);
   const [region, setRegion] = useState('');
   const [recommendations, setRecommendations] = useState([]);
+  const [soilHealthData, setSoilHealthData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
 
 
-  // Local recommendation generator based on pH and region
+  useEffect(() => {
+    loadSoilHealthData();
+  }, []);
+
+  const loadSoilHealthData = () => {
+    if (global.soilHealthData) {
+      setSoilHealthData(global.soilHealthData);
+    }
+  };
+
+  // Local recommendation generator based on soil health data and region
   const generateRecommendations = () => {
-    const ph = parseFloat(inputPH);
-    if (Number.isNaN(ph) || ph <= 0) {
-      Alert.alert('Error', 'Please enter a valid pH value');
+    if (!soilHealthData) {
+      Alert.alert('No Soil Data', 'Please check your soil health first to get crop recommendations.');
       return [];
     }
+    
+    const ph = soilHealthData.ph;
 
     const isAcidic = ph < 6.5;
     const isNeutral = ph >= 6.5 && ph <= 7.5;
@@ -65,8 +79,14 @@ export default function AdvisoryScreen({ user }) {
   };
 
   const handleRecommend = () => {
+    if (!soilHealthData) {
+      Alert.alert('No Soil Data', 'Please check your soil health first to get crop recommendations.');
+      return;
+    }
+    setLoading(true);
     const result = generateRecommendations();
     setRecommendations(result);
+    setLoading(false);
   };
 
 
@@ -78,8 +98,7 @@ export default function AdvisoryScreen({ user }) {
         <View style={styles.headerContent}>
           <Ionicons name="leaf" size={40} color="#4CAF50" />
           <View style={styles.headerText}>
-            <Title style={styles.headerTitle}>Crop Advisory</Title>
-            <Title style={styles.headerTitleHindi}>फसल सलाह</Title>
+            <Title style={styles.headerTitle}>{t('cropAdvisory')}</Title>
             <Paragraph style={styles.headerSubtitle}>
               Get personalized crop recommendations based on your soil and previous crops
             </Paragraph>
@@ -87,29 +106,38 @@ export default function AdvisoryScreen({ user }) {
         </View>
       </Surface>
 
+      {/* Soil Health Status */}
+      <Card style={styles.statusCard} elevation={2}>
+        <Card.Content>
+          <Title style={styles.statusTitle}>Soil Health Status</Title>
+          {soilHealthData ? (
+            <View style={styles.statusContent}>
+              <Text style={styles.statusText}>✅ Soil health data available</Text>
+              <Text style={styles.statusDetail}>pH: {soilHealthData.ph}</Text>
+              <Text style={styles.statusDetail}>Overall Health: {soilHealthData.analysis.overallHealth}%</Text>
+              <Text style={styles.statusDetail}>Last checked: {new Date(soilHealthData.timestamp).toLocaleDateString()}</Text>
+            </View>
+          ) : (
+            <View style={styles.statusContent}>
+              <Text style={styles.noDataText}>❌ No soil health data found</Text>
+              <Text style={styles.noDataDetail}>Please check your soil health first to get recommendations</Text>
+            </View>
+          )}
+        </Card.Content>
+      </Card>
+
       {/* Input Form */}
       <Card style={styles.formCard} elevation={2}>
         <Card.Content>
-          <Title style={styles.formTitle}>Enter Your Details / अपना विवरण दर्ज करें</Title>
+          <Title style={styles.formTitle}>Enter Your Region</Title>
           
-
           <TextInput
-            label="pH Value (e.g., 6.8)"
-            value={inputPH}
-            onChangeText={setInputPH}
-            mode="outlined"
-            keyboardType="decimal-pad"
-            style={{ marginBottom: 12 }}
-            placeholder="Enter soil pH"
-            left={<TextInput.Icon icon="flask" />}
-          />
-          <TextInput
-            label="Region / क्षेत्र"
+            label={t('region')}
             value={region}
             onChangeText={setRegion}
             mode="outlined"
             style={{ marginBottom: 12 }}
-            placeholder="e.g., Solapur, Maharashtra"
+            placeholder={t('enterRegion')}
             left={<TextInput.Icon icon="map-marker" />}
           />
 
@@ -118,9 +146,9 @@ export default function AdvisoryScreen({ user }) {
             onPress={handleRecommend}
             style={styles.recommendButton}
             contentStyle={styles.buttonContent}
-            disabled={!inputPH.trim()}
+            disabled={!soilHealthData || loading}
           >
-            Get Crop Recommendations / फसल सिफारिश प्राप्त करें
+            {loading ? 'Getting Recommendations...' : t('getCropRecommendations')}
           </Button>
         </Card.Content>
       </Card>
@@ -129,7 +157,7 @@ export default function AdvisoryScreen({ user }) {
       {recommendations.length > 0 && (
         <Card style={styles.advisoryCard} elevation={2}>
           <Card.Content>
-            <Title style={styles.recommendationTitle}>🌾 Top Crop Recommendations / शीर्ष फसल सिफारिशें</Title>
+            <Title style={styles.recommendationTitle}>🌾 {t('topCropRecommendations')}</Title>
             {recommendations.map((rec, idx) => (
               <Surface key={idx} style={styles.recoItem} elevation={1}>
                 <View style={styles.recoRow}>
@@ -149,7 +177,7 @@ export default function AdvisoryScreen({ user }) {
       {/* Tips */}
       <Card style={styles.tipsCard} elevation={2}>
         <Card.Content>
-          <Title style={styles.tipsTitle}>💡 Advisory Tips / सलाह सुझाव</Title>
+          <Title style={styles.tipsTitle}>💡 Advisory Tips</Title>
           <Paragraph style={styles.tipText}>
             • Consider local weather conditions before planting
           </Paragraph>
@@ -199,6 +227,44 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   headerSubtitle: {
+    fontSize: 12,
+    color: '#666',
+  },
+  statusCard: {
+    margin: 15,
+    marginTop: 0,
+    borderRadius: 12,
+    backgroundColor: '#F0F8FF',
+  },
+  statusTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+  },
+  statusContent: {
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginBottom: 8,
+  },
+  statusDetail: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 3,
+  },
+  noDataText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#F44336',
+    marginBottom: 8,
+  },
+  noDataDetail: {
     fontSize: 12,
     color: '#666',
   },
