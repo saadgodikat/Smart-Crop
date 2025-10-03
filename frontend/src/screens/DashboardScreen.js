@@ -33,7 +33,7 @@ export default function DashboardScreen({ navigation, user, language = 'en' }) {
       title: t('soilHealth'),
       icon: 'earth',
       color: '#8BC34A',
-      screen: 'Soil',
+      screen: 'SoilHealthMethod',
       description: 'Check soil health and get improvement suggestions',
     },
     {
@@ -49,6 +49,13 @@ export default function DashboardScreen({ navigation, user, language = 'en' }) {
       color: '#FF9800',
       screen: 'Market',
       description: 'Latest crop prices in your area',
+    },
+    {
+      title: 'Pest Detection',
+      icon: 'bug',
+      color: '#FF5722',
+      screen: 'PestDetection',
+      description: 'Identify crop diseases and pests using camera',
     },
   ];
 

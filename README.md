@@ -6,6 +6,7 @@ A full-stack prototype mobile application for farmers in India to get crop advis
 
 - **Soil Health Analysis**: Comprehensive soil testing with pH, nutrients, and health scoring
 - **Smart Crop Advisory**: AI-powered crop recommendations based on soil health data
+- **Pest & Disease Detection**: Camera-based identification of crop diseases and pests with treatment recommendations
 - **Real-time Market Prices**: Live crop prices from Government of India API
 - **Weather Information**: Location-based weather data and farming advice
 - **User Profile Management**: Streamlined profile with essential information
@@ -24,6 +25,7 @@ A full-stack prototype mobile application for farmers in India to get crop advis
 - **React Native** with Expo
 - **React Navigation** for screen navigation
 - **React Native Paper** for Material Design UI
+- **Expo Image Picker** for camera functionality
 - **Government API Integration** for market prices
 - **Global State Management** for data sharing
 
@@ -33,11 +35,12 @@ A full-stack prototype mobile application for farmers in India to get crop advis
 2. **Dashboard** - Main navigation hub
 3. **Soil Health** - Comprehensive soil analysis (REQUIRED FIRST)
 4. **Crop Advisory** - Smart recommendations based on soil data
-5. **Market Prices** - Real-time prices with state/city filters
-6. **Weather** - Weather data and farming advice
-7. **Profile** - Streamlined user profile
-8. **Feedback** - Submit feedback and support
-9. **Help** - Help and support information
+5. **Pest Detection** - Camera-based disease and pest identification
+6. **Market Prices** - Real-time prices with state/city filters
+7. **Weather** - Weather data and farming advice
+8. **Profile** - Streamlined user profile
+9. **Feedback** - Submit feedback and support
+10. **Help** - Help and support information
 
 ### 🔄 **New Workflow**
 **Step 1**: Check Soil Health → Enter soil parameters → Get analysis → Data saved
@@ -175,6 +178,13 @@ Or create a new account using the signup screen.
 - **Price Range**: Modal, minimum, and maximum prices
 - **50+ Commodities**: Vegetables, fruits, grains, spices
 
+### Pest & Disease Detection
+- **Camera Integration**: Take photos or select from gallery
+- **AI Analysis**: Simulated disease and pest identification
+- **Treatment Recommendations**: Detailed cure and prevention methods
+- **Confidence Scoring**: Analysis confidence percentage
+- **Disease Database**: 5+ common crop diseases and pests
+
 ### Weather Information
 - **Location-based**: Weather data for major Indian cities
 - **Farming Advice**: Weather-specific agricultural recommendations
@@ -268,11 +278,16 @@ For physical device testing, replace `localhost` with your computer's IP address
    - Search for vegetables: Tomato, Onion, Potato
    - Verify real-time price data display
 
-5. **Profile Management**
+5. **Pest Detection**
+   - Test camera functionality and gallery selection
+   - Take photos of plant diseases/pests
+   - Verify analysis results and treatment recommendations
+
+6. **Profile Management**
    - Check streamlined profile (name, phone, location only)
    - Test logout functionality
 
-6. **Data Persistence**
+7. **Data Persistence**
    - Verify soil data clears on app refresh
    - Test cross-screen data sharing
 
@@ -318,7 +333,7 @@ For support and questions:
 - **Advanced Analytics**: Farming performance dashboard
 - **Community Features**: Farmer networking and knowledge sharing
 - **Government Schemes**: Integration with agricultural subsidies
-- **Crop Disease Detection**: Image-based disease identification
+- **Enhanced Disease Detection**: Advanced AI models for better accuracy
 
 ---
 

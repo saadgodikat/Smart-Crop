@@ -17,6 +17,9 @@ import MarketPricesScreen from './src/screens/MarketPricesScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import FeedbackScreen from './src/screens/FeedbackScreen';
 import HelpScreen from './src/screens/HelpScreen';
+import PestDetectionScreen from './src/screens/PestDetectionScreen';
+import SoilHealthMethodScreen from './src/screens/SoilHealthMethodScreen';
+import SoilKitPurchaseScreen from './src/screens/SoilKitPurchaseScreen';
 
 // Theme
 import theme from './src/theme/theme';
@@ -91,6 +94,28 @@ export default function App() {
                 {(props) => <AdvisoryScreen {...props} user={user} language={selectedLanguage} />}
               </Stack.Screen>
               <Stack.Screen
+                name="SoilHealthMethod"
+                options={{
+                  title: 'Soil Health Method / मिट्टी स्वास्थ्य विधि',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <SoilHealthMethodScreen {...props} user={user} language={selectedLanguage} />}
+              </Stack.Screen>
+              <Stack.Screen
+                name="SoilKitPurchase"
+                options={{
+                  title: 'Soil Kit Purchase / मिट्टी किट खरीदारी',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <SoilKitPurchaseScreen {...props} user={user} language={selectedLanguage} />}
+              </Stack.Screen>
+              <Stack.Screen
                 name="Soil"
                 options={{
                   title: 'Soil Health / मिट्टी स्वास्थ्य',
@@ -122,6 +147,17 @@ export default function App() {
                 }}
               >
                 {(props) => <MarketPricesScreen {...props} user={user} language={selectedLanguage} />}
+              </Stack.Screen>
+              <Stack.Screen
+                name="PestDetection"
+                options={{
+                  title: 'Pest Detection / कीट पहचान',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff',
+                }}
+              >
+                {(props) => <PestDetectionScreen {...props} user={user} language={selectedLanguage} />}
               </Stack.Screen>
               <Stack.Screen
                 name="Profile"

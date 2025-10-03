@@ -91,6 +91,39 @@ const initializeTables = async () => {
       feedback_text TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id)
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS alerts (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      message TEXT NOT NULL,
+      alert_type ENUM('weather', 'pest', 'market', 'government') NOT NULL,
+      severity ENUM('low', 'medium', 'high', 'critical') NOT NULL,
+      location VARCHAR(255),
+      crop_type VARCHAR(100),
+      is_active BOOLEAN DEFAULT TRUE,
+      expires_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS user_alerts (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      alert_id INT NOT NULL,
+      is_read BOOLEAN DEFAULT FALSE,
+      read_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      FOREIGN KEY (alert_id) REFERENCES alerts(id)
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS alert_subscriptions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      alert_type ENUM('weather', 'pest', 'market', 'government') NOT NULL,
+      is_enabled BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
     )`
   ];
 
@@ -145,7 +178,28 @@ const seedData = async () => {
     `INSERT IGNORE INTO users (name, phone, password, location, soil_type, last_crop) VALUES
       ('Rajesh Kumar', '9876543210', 'password123', 'Solapur', 'black', 'cotton'),
       ('Priya Sharma', '9876543211', 'password123', 'Pune', 'sandy', 'wheat'),
-      ('Amit Singh', '9876543212', 'password123', 'Nashik', 'clay', 'rice')`
+      ('Amit Singh', '9876543212', 'password123', 'Nashik', 'clay', 'rice')`,
+    
+    `INSERT IGNORE INTO alerts (title, message, alert_type, severity, location, crop_type, expires_at) VALUES
+      ('Heavy Rainfall Alert', 'Heavy rainfall expected in next 24 hours. Protect your crops and ensure proper drainage.', 'weather', 'high', 'Maharashtra', 'cotton', DATE_ADD(NOW(), INTERVAL 2 DAY)),
+      ('Pest Attack Warning', 'Bollworm attack reported in nearby areas. Check your cotton crops and apply pesticide if needed.', 'pest', 'critical', 'Solapur', 'cotton', DATE_ADD(NOW(), INTERVAL 3 DAY)),
+      ('Market Price Drop', 'Wheat prices have dropped by 15% in Pune market. Consider holding your stock.', 'market', 'medium', 'Pune', 'wheat', DATE_ADD(NOW(), INTERVAL 5 DAY)),
+      ('Government Subsidy', 'New fertilizer subsidy scheme launched. Apply before 31st March.', 'government', 'low', 'Maharashtra', NULL, DATE_ADD(NOW(), INTERVAL 30 DAY)),
+      ('Drought Warning', 'Low rainfall predicted for next month. Plan water conservation measures.', 'weather', 'high', 'Maharashtra', NULL, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
+    
+    `INSERT IGNORE INTO alert_subscriptions (user_id, alert_type, is_enabled) VALUES
+      (1, 'weather', TRUE),
+      (1, 'pest', TRUE),
+      (1, 'market', TRUE),
+      (1, 'government', TRUE),
+      (2, 'weather', TRUE),
+      (2, 'pest', FALSE),
+      (2, 'market', TRUE),
+      (2, 'government', TRUE),
+      (3, 'weather', TRUE),
+      (3, 'pest', TRUE),
+      (3, 'market', FALSE),
+      (3, 'government', TRUE)`
   ];
 
   for (const query of seedQueries) {
