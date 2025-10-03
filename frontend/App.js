@@ -20,6 +20,10 @@ import HelpScreen from './src/screens/HelpScreen';
 import PestDetectionScreen from './src/screens/PestDetectionScreen';
 import SoilHealthMethodScreen from './src/screens/SoilHealthMethodScreen';
 import SoilKitPurchaseScreen from './src/screens/SoilKitPurchaseScreen';
+import AlertsScreen from './src/screens/AlertsScreen';
+import DebugScreen from './src/screens/DebugScreen';
+// import notificationService from './src/services/notificationService';
+import { testBackendConnection } from './src/services/testConnection';
 
 // Theme
 import theme from './src/theme/theme';
@@ -34,7 +38,26 @@ export default function App() {
   useEffect(() => {
     // Check if user is already logged in (from AsyncStorage in a real app)
     // For demo purposes, we'll start with login screen
-  }, []);
+    
+    // Test backend connection on app start
+    testBackendConnection();
+    
+    // Setup notification permissions when app starts
+    // if (isLoggedIn && user) {
+    //   setupNotifications();
+    // }
+  }, [isLoggedIn, user]);
+
+  // const setupNotifications = async () => {
+  //   try {
+  //     const token = await notificationService.registerForPushNotifications();
+  //     if (token && user) {
+  //       await notificationService.registerTokenWithBackend(user.id, token);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error setting up notifications:', error);
+  //   }
+  // };
 
   const handleLogin = (userData) => {
     setUser(userData);
@@ -186,6 +209,27 @@ export default function App() {
                 component={HelpScreen}
                 options={{ 
                   title: 'Help / सहायता',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff'
+                }}
+              />
+              <Stack.Screen 
+                name="Alerts" 
+                options={{ 
+                  title: 'Alerts / अलर्ट',
+                  headerShown: true,
+                  headerStyle: { backgroundColor: theme.colors.primary },
+                  headerTintColor: '#fff'
+                }}
+              >
+                {(props) => <AlertsScreen {...props} userId={user?.id} />}
+              </Stack.Screen>
+              <Stack.Screen 
+                name="Debug" 
+                component={DebugScreen}
+                options={{ 
+                  title: 'Debug Connection',
                   headerShown: true,
                   headerStyle: { backgroundColor: theme.colors.primary },
                   headerTintColor: '#fff'

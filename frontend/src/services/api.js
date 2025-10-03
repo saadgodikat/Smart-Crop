@@ -1,4 +1,11 @@
-const API_BASE_URL = 'http://localhost:3000/api';
+// Default API URL - will be updated dynamically
+let API_BASE_URL = 'http://localhost:3000/api';
+
+// Function to update API URL
+const updateAPIURL = (newURL) => {
+  API_BASE_URL = newURL;
+  console.log('📡 API URL updated to:', API_BASE_URL);
+};
 
 class ApiService {
   async request(endpoint, options = {}) {
@@ -13,15 +20,28 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
-
+      
       if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong');
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        throw new Error(errorData.error || 'Something went wrong');
       }
-
+      
+      const data = await response.json();
       return data;
     } catch (error) {
       console.error('API Error:', error);
+      
+      // Provide more specific error messages
+      if (error.message.includes('Failed to fetch') || error.message.includes('Network request failed')) {
+        throw new Error('Cannot connect to server. Please ensure the backend is running on port 3000.');
+      }
+      
       throw error;
     }
   }
@@ -95,4 +115,5 @@ class ApiService {
   }
 }
 
+export { API_BASE_URL, updateAPIURL };
 export default new ApiService();

@@ -15,6 +15,8 @@ import {
   TextInput,
 } from 'react-native-paper';
 import { getTranslation } from '../utils/translations';
+import { getValidCitiesByState, getVerifiedCommodities } from '../utils/marketApiTester';
+import { checkAPIHealth } from '../utils/apiValidator';
 
 export default function MarketPricesScreen({ user, language = 'en' }) {
   const t = (key) => getTranslation(language, key);
@@ -27,6 +29,7 @@ export default function MarketPricesScreen({ user, language = 'en' }) {
   const [cityMenuVisible, setCityMenuVisible] = useState(false);
   const [stateSearch, setStateSearch] = useState('');
   const [citySearch, setCitySearch] = useState('');
+  const [apiHealth, setApiHealth] = useState(null);
 
   // Safe getter functions
   const getFilteredStates = () => {
@@ -58,25 +61,14 @@ export default function MarketPricesScreen({ user, language = 'en' }) {
 
   const API_KEY = '579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b';
   
-  // Test API connectivity on component mount
+  // Check API health on component mount
   React.useEffect(() => {
-    const testAPI = async () => {
-      try {
-        const testUrl = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${API_KEY}&format=json&limit=1`;
-        console.log('🧪 Testing API connectivity:', testUrl);
-        const response = await fetch(testUrl);
-        console.log('🧪 API Test Status:', response.status);
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ API is working. Sample data:', data);
-        } else {
-          console.error('❌ API test failed:', response.status, response.statusText);
-        }
-      } catch (error) {
-        console.error('❌ API connectivity test failed:', error);
-      }
+    const testAPIHealth = async () => {
+      const health = await checkAPIHealth();
+      setApiHealth(health);
+      console.log('🌡️ API Health:', health);
     };
-    testAPI();
+    testAPIHealth();
   }, []);
   
   const states = [
@@ -88,28 +80,8 @@ export default function MarketPricesScreen({ user, language = 'en' }) {
 
 
 
-  const citiesByState = {
-    'Andhra Pradesh': ['Visakhapatnam', 'Vijayawada', 'Guntur', 'Nellore', 'Kurnool', 'Rajahmundry', 'Tirupati', 'Kadapa'],
-    'Assam': ['Guwahati', 'Silchar', 'Dibrugarh', 'Jorhat', 'Nagaon', 'Tinsukia', 'Tezpur'],
-    'Bihar': ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Purnia', 'Darbhanga', 'Bihar Sharif'],
-    'Chhattisgarh': ['Raipur', 'Bhilai', 'Korba', 'Bilaspur', 'Durg', 'Rajnandgaon'],
-    'Delhi': ['New Delhi', 'Central Delhi', 'South Delhi', 'North Delhi', 'East Delhi', 'West Delhi'],
-    'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar', 'Junagadh', 'Gandhinagar'],
-    'Haryana': ['Gurgaon', 'Faridabad', 'Panipat', 'Ambala', 'Karnal', 'Hisar', 'Rohtak', 'Sonipat'],
-    'Himachal Pradesh': ['Shimla', 'Dharamshala', 'Solan', 'Mandi', 'Kullu', 'Hamirpur'],
-    'Jharkhand': ['Ranchi', 'Jamshedpur', 'Dhanbad', 'Bokaro', 'Deoghar', 'Hazaribagh'],
-    'Karnataka': ['Bangalore', 'Mysore', 'Hubli', 'Mangalore', 'Belgaum', 'Gulbarga', 'Davangere', 'Bellary'],
-    'Kerala': ['Kochi', 'Thiruvananthapuram', 'Kozhikode', 'Thrissur', 'Kollam', 'Palakkad', 'Alappuzha'],
-    'Madhya Pradesh': ['Bhopal', 'Indore', 'Gwalior', 'Jabalpur', 'Ujjain', 'Sagar', 'Dewas', 'Satna'],
-    'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad', 'Sholapur', 'Amravati', 'Kolhapur'],
-    'Odisha': ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Brahmapur', 'Sambalpur', 'Puri', 'Balasore'],
-    'Punjab': ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda', 'Mohali', 'Firozpur'],
-    'Rajasthan': ['Jaipur', 'Jodhpur', 'Kota', 'Bikaner', 'Udaipur', 'Ajmer', 'Bhilwara', 'Alwar'],
-    'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Salem', 'Tiruchirappalli', 'Tirunelveli', 'Erode', 'Vellore'],
-    'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Khammam', 'Karimnagar', 'Ramagundam'],
-    'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Agra', 'Varanasi', 'Meerut', 'Allahabad', 'Bareilly', 'Ghaziabad'],
-    'West Bengal': ['Kolkata', 'Howrah', 'Durgapur', 'Asansol', 'Siliguri', 'Malda', 'Bardhaman']
-  };
+  // Use validated cities that actually return data from API
+  const citiesByState = getValidCitiesByState();
 
   const searchPrices = async () => {
     console.log('=== MARKET PRICE API DEBUG ===');
@@ -162,7 +134,7 @@ export default function MarketPricesScreen({ user, language = 'en' }) {
         console.log('📋 Sample Record:', JSON.stringify(filteredPrices[0], null, 2));
       }
       
-      // Client-side filtering by city if selected
+      // Enhanced city filtering with better matching
       if (selectedCity && filteredPrices.length > 0) {
         console.log('🏙️ Filtering by city:', selectedCity);
         const beforeFilter = filteredPrices.length;
@@ -172,20 +144,30 @@ export default function MarketPricesScreen({ user, language = 'en' }) {
           const district = (price.district || '').toLowerCase();
           const searchCity = selectedCity.toLowerCase();
           
-          // Handle common spelling variations
+          // Enhanced city variations mapping
           const cityVariations = {
             'solapur': ['sholapur', 'solapur'],
             'mumbai': ['mumbai', 'bombay'],
             'pune': ['pune', 'poona'],
             'bengaluru': ['bengaluru', 'bangalore'],
-            'kolkata': ['kolkata', 'calcutta']
+            'kolkata': ['kolkata', 'calcutta'],
+            'thiruvananthapuram': ['thiruvananthapuram', 'trivandrum'],
+            'kochi': ['kochi', 'cochin'],
+            'gurgaon': ['gurgaon', 'gurugram'],
+            'new delhi': ['new delhi', 'delhi'],
+            'central delhi': ['central delhi', 'delhi'],
+            'south delhi': ['south delhi', 'delhi']
           };
           
           const searchVariations = cityVariations[searchCity] || [searchCity];
           
-          const cityMatch = searchVariations.some(variation => 
-            market.includes(variation) || district.includes(variation)
-          );
+          // More flexible matching - check if city name is contained in market/district
+          const cityMatch = searchVariations.some(variation => {
+            const words = variation.split(' ');
+            return words.some(word => 
+              word.length > 2 && (market.includes(word) || district.includes(word))
+            );
+          });
           
           if (cityMatch) {
             console.log('✅ City match found:', price.market, price.district, 'for search:', selectedCity);
@@ -254,6 +236,20 @@ export default function MarketPricesScreen({ user, language = 'en' }) {
   return (
     <ScrollView style={styles.container}>
       <Title style={styles.title}>{t('marketPrices')}</Title>
+      
+      {/* API Status Indicator */}
+      {apiHealth && (
+        <Card style={[styles.statusCard, apiHealth.status === 'healthy' ? styles.healthyStatus : styles.errorStatus]} elevation={1}>
+          <Card.Content>
+            <Text style={styles.statusText}>
+              {apiHealth.status === 'healthy' 
+                ? `✅ API Active - ${apiHealth.recordsAvailable || 'Many'} records available`
+                : `❌ API Issue: ${apiHealth.error}`
+              }
+            </Text>
+          </Card.Content>
+        </Card>
+      )}
       
       <Card style={styles.card}>
         <Card.Content>
@@ -361,7 +357,11 @@ export default function MarketPricesScreen({ user, language = 'en' }) {
           />
           
           <Text style={styles.suggestionText}>
-            💡 Popular: Potato, Onion, Tomato, Rice, Wheat, Maize, Cotton
+            💡 Verified: {getVerifiedCommodities().slice(0, 6).join(', ')}
+          </Text>
+          
+          <Text style={styles.noteText}>
+            📍 Note: Cities shown are verified to have market data available
           </Text>
           
           <Button
@@ -508,7 +508,28 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontSize: 11,
     color: '#666',
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
+  noteText: {
+    fontSize: 10,
+    color: '#888',
     marginBottom: 15,
     fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  statusCard: {
+    marginBottom: 10,
+  },
+  healthyStatus: {
+    backgroundColor: '#E8F5E8',
+  },
+  errorStatus: {
+    backgroundColor: '#FFEBEE',
+  },
+  statusText: {
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });

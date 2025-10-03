@@ -57,6 +57,13 @@ export default function DashboardScreen({ navigation, user, language = 'en' }) {
       screen: 'PestDetection',
       description: 'Identify crop diseases and pests using camera',
     },
+    {
+      title: 'Alerts',
+      icon: 'notifications',
+      color: '#E91E63',
+      screen: 'Alerts',
+      description: 'View weather, pest, and market alerts',
+    },
   ];
 
   const additionalItems = [
@@ -71,6 +78,12 @@ export default function DashboardScreen({ navigation, user, language = 'en' }) {
       icon: 'help-circle',
       color: '#607D8B',
       screen: 'Help',
+    },
+    {
+      title: 'Debug',
+      icon: 'bug',
+      color: '#795548',
+      screen: 'Debug',
     },
   ];
 

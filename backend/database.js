@@ -12,6 +12,9 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+// Promise wrapper for async/await usage
+const promisePool = pool.promise();
+
 // Create database if it doesn't exist
 const createDatabase = async () => {
   const connection = mysql.createConnection({
@@ -45,6 +48,7 @@ const initializeTables = async () => {
       location VARCHAR(255),
       soil_type VARCHAR(50),
       last_crop VARCHAR(100),
+      push_token VARCHAR(255),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`,
     
@@ -139,6 +143,24 @@ const initializeTables = async () => {
       });
     });
   }
+  
+  // Add push_token column to existing users table if it doesn't exist
+  await new Promise((resolve, reject) => {
+    pool.query('ALTER TABLE users ADD COLUMN push_token VARCHAR(255)', (err) => {
+      if (err && err.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Error adding push_token column:', err);
+        reject(err);
+      } else {
+        if (err && err.code === 'ER_DUP_FIELDNAME') {
+          console.log('push_token column already exists');
+        } else {
+          console.log('push_token column added successfully');
+        }
+        resolve();
+      }
+    });
+  });
+  
   console.log('All tables created/verified successfully');
 };
 
@@ -219,6 +241,7 @@ const seedData = async () => {
 
 module.exports = {
   pool,
+  promisePool,
   createDatabase,
   initializeTables,
   seedData

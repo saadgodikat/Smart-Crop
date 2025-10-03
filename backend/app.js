@@ -1,8 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
-const { pool, createDatabase, initializeTables, seedData } = require('./database');
+const { pool, promisePool, createDatabase, initializeTables, seedData } = require('./database');
 const config = require('./config');
+const notificationRoutes = require('./routes/notifications');
+const alertRoutes = require('./routes/alerts');
 
 const app = express();
 const PORT = config.port;
@@ -10,6 +12,10 @@ const PORT = config.port;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Routes
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/alerts', alertRoutes);
 
 // Initialize database on startup
 const initializeApp = async () => {
@@ -94,7 +100,7 @@ app.post('/api/signup', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingResult = await pool.execute(
+    const existingResult = await promisePool.execute(
       'SELECT id FROM users WHERE phone = ?',
       [phone]
     );
@@ -105,7 +111,7 @@ app.post('/api/signup', async (req, res) => {
     }
 
     // Insert new user
-    const insertResult = await pool.execute(
+    const insertResult = await promisePool.execute(
       'INSERT INTO users (name, phone, password, location, soil_type, last_crop) VALUES (?, ?, ?, ?, ?, ?)',
       [name, phone, password, location || null, soil_type || null, last_crop || null]
     );
@@ -130,7 +136,7 @@ app.post('/api/advisory', async (req, res) => {
       return res.status(400).json({ error: 'Soil type and last crop are required' });
     }
 
-    const advisoryResult = await pool.execute(
+    const advisoryResult = await promisePool.execute(
       'SELECT * FROM advisory WHERE soil_type = ? AND last_crop = ?',
       [soil_type, last_crop]
     );
@@ -138,7 +144,7 @@ app.post('/api/advisory', async (req, res) => {
 
     if (rows.length === 0) {
       // Return a general recommendation if no exact match
-      const generalResult = await pool.execute(
+      const generalResult = await promisePool.execute(
         'SELECT * FROM advisory WHERE soil_type = ? LIMIT 1',
         [soil_type]
       );
@@ -176,8 +182,8 @@ app.get('/api/soil', async (req, res) => {
       params.push(soil_type);
     }
     
-    const result = await pool.execute(query, params);
-    const rows = result[0];
+  const result = await promisePool.execute(query, params);
+  const rows = result[0];
     res.json(rows);
   } catch (error) {
     console.error('Soil health error:', error);
@@ -198,8 +204,8 @@ app.get('/api/weather', async (req, res) => {
       params.push(location);
     }
     
-    const result = await pool.execute(query, params);
-    const rows = result[0];
+  const result = await promisePool.execute(query, params);
+  const rows = result[0];
     res.json(rows);
   } catch (error) {
     console.error('Weather error:', error);
@@ -230,8 +236,8 @@ app.get('/api/market', async (req, res) => {
       query += ' WHERE ' + conditions.join(' AND ');
     }
     
-    const result = await pool.execute(query, params);
-    const rows = result[0];
+  const result = await promisePool.execute(query, params);
+  const rows = result[0];
     res.json(rows);
   } catch (error) {
     console.error('Market prices error:', error);
@@ -244,7 +250,7 @@ app.get('/api/profile/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     
-    const profileResult = await pool.execute(
+    const profileResult = await promisePool.execute(
       'SELECT id, name, phone, location, soil_type, last_crop FROM users WHERE id = ?',
       [userId]
     );
@@ -270,7 +276,7 @@ app.post('/api/feedback', async (req, res) => {
       return res.status(400).json({ error: 'User ID and feedback text are required' });
     }
 
-    const feedbackResult = await pool.execute(
+    const feedbackResult = await promisePool.execute(
       'INSERT INTO feedback (user_id, feedback_text) VALUES (?, ?)',
       [user_id, feedback_text]
     );
@@ -294,7 +300,7 @@ app.get('/api/health', (req, res) => {
 // Start server
 const startServer = async () => {
   await initializeApp();
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log('API endpoints available:');
     console.log('- POST /api/login');
@@ -306,6 +312,13 @@ const startServer = async () => {
     console.log('- GET /api/profile/:userId');
     console.log('- POST /api/feedback');
     console.log('- GET /api/health');
+    console.log('- POST /api/notifications/register-token');
+    console.log('- POST /api/notifications/test');
+    console.log('- POST /api/notifications/send-alert/:alertId');
+    console.log('- GET /api/alerts/user/:userId');
+    console.log('- POST /api/alerts/mark-read');
+    console.log('- POST /api/alerts/create');
+    console.log('- GET /api/alerts/stats/:userId');
   });
 };
 
