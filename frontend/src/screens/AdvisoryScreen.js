@@ -20,42 +20,17 @@ import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../services/api';
 
 export default function AdvisoryScreen({ user }) {
-  const [soilType, setSoilType] = useState(user?.soil_type || '');
-  const [lastCrop, setLastCrop] = useState(user?.last_crop || '');
-  const [loading, setLoading] = useState(false);
-  const [advisory, setAdvisory] = useState(null);
-
-  // New recommendation inputs
-  const seasons = ['Kharif', 'Rabi', 'Zaid', 'Summer', 'Monsoon'];
-  const [selectedSeason, setSelectedSeason] = useState('Kharif');
   const [inputPH, setInputPH] = useState('');
   const [region, setRegion] = useState('');
   const [recommendations, setRecommendations] = useState([]);
 
-  const soilTypes = ['black', 'sandy', 'clay', 'loamy', 'red'];
-  const commonCrops = ['cotton', 'wheat', 'rice', 'maize', 'sugarcane', 'groundnut', 'soybean'];
 
-  const handleGetAdvisory = async () => {
-    if (!soilType || !lastCrop) {
-      Alert.alert('Error', 'Please select soil type and last crop');
-      return;
-    }
 
-    setLoading(true);
-    try {
-      const response = await ApiService.getAdvisory(soilType, lastCrop);
-      setAdvisory(response);
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Local recommendation generator (season, pH, region)
+  // Local recommendation generator based on pH and region
   const generateRecommendations = () => {
     const ph = parseFloat(inputPH);
     if (Number.isNaN(ph) || ph <= 0) {
+      Alert.alert('Error', 'Please enter a valid pH value');
       return [];
     }
 
@@ -64,27 +39,29 @@ export default function AdvisoryScreen({ user }) {
     const isAlkaline = ph > 7.5;
 
     const cropPool = [
-      { name: 'Wheat', seasons: ['Rabi'], ph: 'neutral', water: 'Moderate', fertilizer: 'NPK 120:60:40', sow: 'Nov-Dec', harvest: 'Mar-Apr' },
-      { name: 'Rice', seasons: ['Kharif'], ph: 'acidic', water: 'High', fertilizer: 'NPK 100:50:50', sow: 'Jun-Jul', harvest: 'Oct-Nov' },
-      { name: 'Maize', seasons: ['Kharif', 'Rabi'], ph: 'neutral', water: 'Moderate', fertilizer: 'NPK 120:60:40', sow: 'Jun-Jul', harvest: 'Sep-Oct' },
-      { name: 'Cotton', seasons: ['Kharif'], ph: 'alkaline', water: 'Low', fertilizer: 'NPK 90:45:45', sow: 'Apr-May', harvest: 'Oct-Dec' },
-      { name: 'Sorghum', seasons: ['Kharif', 'Rabi'], ph: 'alkaline', water: 'Low', fertilizer: 'NPK 80:40:40', sow: 'Jun-Jul', harvest: 'Sep-Oct' },
-      { name: 'Chickpea', seasons: ['Rabi'], ph: 'neutral', water: 'Low', fertilizer: 'NPK 20:40:0', sow: 'Oct-Nov', harvest: 'Feb-Mar' },
-      { name: 'Groundnut', seasons: ['Kharif'], ph: 'neutral', water: 'Moderate', fertilizer: 'NPK 20:40:40', sow: 'Jun-Jul', harvest: 'Oct-Nov' },
-      { name: 'Sugarcane', seasons: ['Summer'], ph: 'alkaline', water: 'High', fertilizer: 'NPK 250:115:115', sow: 'Feb-Mar', harvest: 'Jan-Feb' },
+      { name: 'Wheat', ph: 'neutral', water: 'Moderate', fertilizer: 'NPK 120:60:40', sow: 'Nov-Dec', harvest: 'Mar-Apr' },
+      { name: 'Rice', ph: 'acidic', water: 'High', fertilizer: 'NPK 100:50:50', sow: 'Jun-Jul', harvest: 'Oct-Nov' },
+      { name: 'Maize', ph: 'neutral', water: 'Moderate', fertilizer: 'NPK 120:60:40', sow: 'Jun-Jul', harvest: 'Sep-Oct' },
+      { name: 'Cotton', ph: 'alkaline', water: 'Low', fertilizer: 'NPK 90:45:45', sow: 'Apr-May', harvest: 'Oct-Dec' },
+      { name: 'Sorghum', ph: 'alkaline', water: 'Low', fertilizer: 'NPK 80:40:40', sow: 'Jun-Jul', harvest: 'Sep-Oct' },
+      { name: 'Chickpea', ph: 'neutral', water: 'Low', fertilizer: 'NPK 20:40:0', sow: 'Oct-Nov', harvest: 'Feb-Mar' },
+      { name: 'Groundnut', ph: 'neutral', water: 'Moderate', fertilizer: 'NPK 20:40:40', sow: 'Jun-Jul', harvest: 'Oct-Nov' },
+      { name: 'Sugarcane', ph: 'alkaline', water: 'High', fertilizer: 'NPK 250:115:115', sow: 'Feb-Mar', harvest: 'Jan-Feb' },
+      { name: 'Soybean', ph: 'neutral', water: 'Moderate', fertilizer: 'NPK 30:60:40', sow: 'Jun-Jul', harvest: 'Oct-Nov' },
+      { name: 'Barley', ph: 'alkaline', water: 'Low', fertilizer: 'NPK 80:40:20', sow: 'Nov-Dec', harvest: 'Mar-Apr' },
     ];
 
-    const seasonFiltered = cropPool.filter(c => c.seasons.includes(selectedSeason));
-    const scored = seasonFiltered.map(crop => {
+    const scored = cropPool.map(crop => {
       let score = 0;
-      if (isNeutral && crop.ph === 'neutral') score += 2;
-      if (isAcidic && crop.ph === 'acidic') score += 2;
-      if (isAlkaline && crop.ph === 'alkaline') score += 2;
+      if (isNeutral && crop.ph === 'neutral') score += 3;
+      if (isAcidic && crop.ph === 'acidic') score += 3;
+      if (isAlkaline && crop.ph === 'alkaline') score += 3;
       if (region && crop.name.toLowerCase().includes('rice') && region.toLowerCase().includes('coastal')) score += 1;
+      if (region && crop.name.toLowerCase().includes('cotton') && region.toLowerCase().includes('maharashtra')) score += 1;
       return { ...crop, score };
     });
-    const sorted = scored.sort((a, b) => b.score - a.score).slice(0, 5);
-    return sorted.map(c => ({ ...c, rating: c.score >= 2 ? 'High' : c.score === 1 ? 'Moderate' : 'Low' }));
+    const sorted = scored.sort((a, b) => b.score - a.score).slice(0, 6);
+    return sorted.map(c => ({ ...c, rating: c.score >= 3 ? 'Excellent' : c.score >= 2 ? 'Good' : c.score === 1 ? 'Fair' : 'Poor' }));
   };
 
   const handleRecommend = () => {
@@ -92,54 +69,7 @@ export default function AdvisoryScreen({ user }) {
     setRecommendations(result);
   };
 
-  const renderAdvisoryCard = () => {
-    if (!advisory) return null;
 
-    return (
-      <Card style={styles.advisoryCard} elevation={4}>
-        <Card.Content>
-          <Title style={styles.advisoryTitle}>🌱 Crop Recommendation</Title>
-          <Title style={styles.advisoryTitleHindi}>फसल सिफारिश</Title>
-          
-          <View style={styles.recommendationContainer}>
-            <Surface style={styles.recommendationCard} elevation={2}>
-              <View style={styles.recommendationHeader}>
-                <Ionicons name="leaf" size={24} color="#4CAF50" />
-                <Text style={styles.recommendationTitle}>Recommended Crop</Text>
-              </View>
-              <Text style={styles.recommendationValue}>{advisory.crop_recommendation}</Text>
-            </Surface>
-          </View>
-
-          <View style={styles.infoGrid}>
-            <Surface style={styles.infoCard} elevation={2}>
-              <View style={styles.infoHeader}>
-                <Ionicons name="flask" size={20} color="#FF9800" />
-                <Text style={styles.infoTitle}>Fertilizer</Text>
-              </View>
-              <Text style={styles.infoValue}>{advisory.fertilizer}</Text>
-            </Surface>
-
-            <Surface style={styles.infoCard} elevation={2}>
-              <View style={styles.infoHeader}>
-                <Ionicons name="trending-up" size={20} color="#4CAF50" />
-                <Text style={styles.infoTitle}>Market Price</Text>
-              </View>
-              <Text style={styles.infoValue}>{advisory.market_price}</Text>
-            </Surface>
-
-            <Surface style={styles.infoCard} elevation={2}>
-              <View style={styles.infoHeader}>
-                <Ionicons name="cloud" size={20} color="#2196F3" />
-                <Text style={styles.infoTitle}>Weather</Text>
-              </View>
-              <Text style={styles.infoValue}>{advisory.weather}</Text>
-            </Surface>
-          </View>
-        </Card.Content>
-      </Card>
-    );
-  };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -162,59 +92,7 @@ export default function AdvisoryScreen({ user }) {
         <Card.Content>
           <Title style={styles.formTitle}>Enter Your Details / अपना विवरण दर्ज करें</Title>
           
-          {/* Soil Type Selection */}
-          <Text style={styles.inputLabel}>Soil Type / मिट्टी का प्रकार *</Text>
-          <View style={styles.chipContainer}>
-            {soilTypes.map((type) => (
-              <Chip
-                key={type}
-                selected={soilType === type}
-                onPress={() => setSoilType(type)}
-                style={[
-                  styles.chip,
-                  soilType === type && styles.selectedChip
-                ]}
-                textStyle={soilType === type && styles.selectedChipText}
-              >
-                {type}
-              </Chip>
-            ))}
-          </View>
 
-          {/* Last Crop Selection */}
-          <Text style={styles.inputLabel}>Last Crop / पिछली फसल *</Text>
-          <View style={styles.chipContainer}>
-            {commonCrops.map((crop) => (
-              <Chip
-                key={crop}
-                selected={lastCrop === crop}
-                onPress={() => setLastCrop(crop)}
-                style={[
-                  styles.chip,
-                  lastCrop === crop && styles.selectedChip
-                ]}
-                textStyle={lastCrop === crop && styles.selectedChipText}
-              >
-                {crop}
-              </Chip>
-            ))}
-          </View>
-
-          {/* Recommendation Inputs */}
-          <Text style={styles.inputLabel}>Season / मौसम</Text>
-          <View style={styles.chipContainer}>
-            {seasons.map((s) => (
-              <Chip
-                key={s}
-                selected={selectedSeason === s}
-                onPress={() => setSelectedSeason(s)}
-                style={[styles.chip, selectedSeason === s && styles.selectedChip]}
-                textStyle={selectedSeason === s && styles.selectedChipText}
-              >
-                {s}
-              </Chip>
-            ))}
-          </View>
           <TextInput
             label="pH Value (e.g., 6.8)"
             value={inputPH}
@@ -237,36 +115,21 @@ export default function AdvisoryScreen({ user }) {
 
           <Button
             mode="contained"
-            onPress={handleGetAdvisory}
-            style={styles.getAdvisoryButton}
-            disabled={loading}
-            contentStyle={styles.buttonContent}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              'Get Advisory / सलाह प्राप्त करें'
-            )}
-          </Button>
-
-          <Button
-            mode="outlined"
             onPress={handleRecommend}
-            style={{ marginTop: 10 }}
+            style={styles.recommendButton}
+            contentStyle={styles.buttonContent}
+            disabled={!inputPH.trim()}
           >
-            Get Crop Recommendations
+            Get Crop Recommendations / फसल सिफारिश प्राप्त करें
           </Button>
         </Card.Content>
       </Card>
-
-      {/* Results */}
-      {renderAdvisoryCard()}
 
       {/* Recommendation Results */}
       {recommendations.length > 0 && (
         <Card style={styles.advisoryCard} elevation={2}>
           <Card.Content>
-            <Title style={{ marginBottom: 10 }}>Top 5 Crop Recommendations</Title>
+            <Title style={styles.recommendationTitle}>🌾 Top Crop Recommendations / शीर्ष फसल सिफारिशें</Title>
             {recommendations.map((rec, idx) => (
               <Surface key={idx} style={styles.recoItem} elevation={1}>
                 <View style={styles.recoRow}>
@@ -373,8 +236,49 @@ const styles = StyleSheet.create({
   selectedChipText: {
     color: '#fff',
   },
-  getAdvisoryButton: {
+  recommendButton: {
     marginTop: 20,
+    backgroundColor: '#4CAF50',
+  },
+  recommendationTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  recoItem: {
+    padding: 12,
+    marginBottom: 10,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
+  recoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  recoName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  recoRating: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    backgroundColor: '#E8F5E8',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  recoDetail: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
   },
   buttonContent: {
     paddingVertical: 8,

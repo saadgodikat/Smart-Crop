@@ -6,6 +6,7 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 
 // Import screens
+import LanguageSelectionScreen from './src/screens/LanguageSelectionScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
@@ -23,6 +24,7 @@ import theme from './src/theme/theme';
 const Stack = createStackNavigator();
 
 export default function App() {
+  const [selectedLanguage, setSelectedLanguage] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
 
@@ -41,18 +43,27 @@ export default function App() {
     setIsLoggedIn(false);
   };
 
+  const handleLanguageSelect = (languageCode) => {
+    setSelectedLanguage(languageCode);
+  };
+
   return (
     <PaperProvider theme={theme}>
       <NavigationContainer>
         <StatusBar style="light" backgroundColor={theme.colors.primary} />
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {!isLoggedIn ? (
+          {!selectedLanguage ? (
+            <Stack.Screen name="LanguageSelection">
+              {(props) => <LanguageSelectionScreen {...props} onLanguageSelect={handleLanguageSelect} />}
+            </Stack.Screen>
+          ) :
+          !isLoggedIn ? (
             <>
               <Stack.Screen name="Login">
-                {(props) => <LoginScreen {...props} onLogin={handleLogin} />}
+                {(props) => <LoginScreen {...props} onLogin={handleLogin} language={selectedLanguage} />}
               </Stack.Screen>
               <Stack.Screen name="Signup">
-                {(props) => <SignupScreen {...props} onLogin={handleLogin} />}
+                {(props) => <SignupScreen {...props} onLogin={handleLogin} language={selectedLanguage} />}
               </Stack.Screen>
             </>
           ) : (
@@ -63,6 +74,7 @@ export default function App() {
                   <DashboardScreen
                     {...props}
                     user={user}
+                    language={selectedLanguage}
                   />
                 )}
               </Stack.Screen>
@@ -75,7 +87,7 @@ export default function App() {
                   headerTintColor: '#fff',
                 }}
               >
-                {(props) => <AdvisoryScreen {...props} user={user} />}
+                {(props) => <AdvisoryScreen {...props} user={user} language={selectedLanguage} />}
               </Stack.Screen>
               <Stack.Screen
                 name="Soil"
@@ -86,7 +98,7 @@ export default function App() {
                   headerTintColor: '#fff',
                 }}
               >
-                {(props) => <SoilHealthScreen {...props} user={user} />}
+                {(props) => <SoilHealthScreen {...props} user={user} language={selectedLanguage} />}
               </Stack.Screen>
               <Stack.Screen
                 name="Weather"
@@ -97,7 +109,7 @@ export default function App() {
                   headerTintColor: '#fff',
                 }}
               >
-                {(props) => <WeatherScreen {...props} user={user} />}
+                {(props) => <WeatherScreen {...props} user={user} language={selectedLanguage} />}
               </Stack.Screen>
               <Stack.Screen
                 name="Market"
@@ -108,7 +120,7 @@ export default function App() {
                   headerTintColor: '#fff',
                 }}
               >
-                {(props) => <MarketPricesScreen {...props} user={user} />}
+                {(props) => <MarketPricesScreen {...props} user={user} language={selectedLanguage} />}
               </Stack.Screen>
               <Stack.Screen
                 name="Profile"
@@ -119,7 +131,7 @@ export default function App() {
                   headerTintColor: '#fff',
                 }}
               >
-                {(props) => <ProfileScreen {...props} user={user} />}
+                {(props) => <ProfileScreen {...props} user={user} language={selectedLanguage} />}
               </Stack.Screen>
               <Stack.Screen 
                 name="Feedback" 
@@ -130,7 +142,7 @@ export default function App() {
                   headerTintColor: '#fff'
                 }}
               >
-                {(props) => <FeedbackScreen {...props} user={user} />}
+                {(props) => <FeedbackScreen {...props} user={user} language={selectedLanguage} />}
               </Stack.Screen>
               <Stack.Screen 
                 name="Help" 
@@ -143,7 +155,8 @@ export default function App() {
                 }}
               />
             </>
-          )}
+          )
+          }
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>

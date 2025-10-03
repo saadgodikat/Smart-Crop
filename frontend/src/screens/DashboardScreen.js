@@ -14,39 +14,37 @@ import {
   Surface,
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import { getTranslation } from '../utils/translations';
 
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 60) / 2;
 
-export default function DashboardScreen({ navigation, user }) {
+export default function DashboardScreen({ navigation, user, language = 'en' }) {
+  const t = (key) => getTranslation(language, key);
   const menuItems = [
     {
-      title: 'Crop Advisory',
-      titleHindi: 'फसल सलाह',
+      title: t('cropAdvisory'),
       icon: 'leaf',
       color: '#4CAF50',
       screen: 'Advisory',
       description: 'Get crop recommendations based on soil and previous crops',
     },
     {
-      title: 'Soil Health',
-      titleHindi: 'मिट्टी स्वास्थ्य',
+      title: t('soilHealth'),
       icon: 'earth',
       color: '#8BC34A',
       screen: 'Soil',
       description: 'Check soil health and get improvement suggestions',
     },
     {
-      title: 'Weather',
-      titleHindi: 'मौसम',
+      title: t('weather'),
       icon: 'cloud',
       color: '#2196F3',
       screen: 'Weather',
       description: 'Current weather conditions and forecasts',
     },
     {
-      title: 'Market Prices',
-      titleHindi: 'बाजार मूल्य',
+      title: t('marketPrices'),
       icon: 'trending-up',
       color: '#FF9800',
       screen: 'Market',
@@ -56,15 +54,13 @@ export default function DashboardScreen({ navigation, user }) {
 
   const additionalItems = [
     {
-      title: 'Feedback',
-      titleHindi: 'प्रतिक्रिया',
+      title: t('feedback'),
       icon: 'chatbubble',
       color: '#9C27B0',
       screen: 'Feedback',
     },
     {
-      title: 'Help',
-      titleHindi: 'सहायता',
+      title: t('help'),
       icon: 'help-circle',
       color: '#607D8B',
       screen: 'Help',
@@ -77,16 +73,34 @@ export default function DashboardScreen({ navigation, user }) {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header with App Name and Profile */}
+      <Surface style={styles.headerCard} elevation={3}>
+        <View style={styles.headerContent}>
+          <View style={styles.appNameContainer}>
+            <Ionicons name="leaf" size={28} color="#4CAF50" />
+            <Title style={styles.appName}>{t('appName')}</Title>
+          </View>
+          <Button
+            mode="text"
+            onPress={() => navigation.navigate('Profile')}
+            style={styles.profileButton}
+            contentStyle={styles.profileButtonContent}
+          >
+            <Ionicons name="person-circle" size={32} color="#4CAF50" />
+          </Button>
+        </View>
+      </Surface>
+
       {/* Welcome Section */}
       <Surface style={styles.welcomeCard} elevation={2}>
         <View style={styles.welcomeContent}>
           <Ionicons name="leaf" size={40} color="#4CAF50" />
           <View style={styles.welcomeText}>
             <Title style={styles.welcomeTitle}>
-              Welcome, {user?.name || 'Farmer'}!
+              {t('welcome')}, {user?.name || 'Farmer'}!
             </Title>
             <Paragraph style={styles.welcomeSubtitle}>
-              नमस्ते, {user?.name || 'किसान'}! Smart farming solutions at your fingertips.
+              Smart farming solutions at your fingertips.
             </Paragraph>
           </View>
         </View>
@@ -94,7 +108,7 @@ export default function DashboardScreen({ navigation, user }) {
 
       {/* Main Features Grid */}
       <View style={styles.section}>
-        <Title style={styles.sectionTitle}>Main Features / मुख्य सुविधाएं</Title>
+        <Title style={styles.sectionTitle}>{t('mainFeatures')}</Title>
         <View style={styles.grid}>
           {menuItems.map((item, index) => (
             <Card
@@ -109,7 +123,6 @@ export default function DashboardScreen({ navigation, user }) {
                 <Title style={[styles.cardTitle, { color: item.color }]}>
                   {item.title}
                 </Title>
-                <Text style={styles.cardTitleHindi}>{item.titleHindi}</Text>
                 <Paragraph style={styles.cardDescription}>
                   {item.description}
                 </Paragraph>
@@ -121,7 +134,7 @@ export default function DashboardScreen({ navigation, user }) {
 
       {/* Additional Options */}
       <View style={styles.section}>
-        <Title style={styles.sectionTitle}>More Options / अधिक विकल्प</Title>
+        <Title style={styles.sectionTitle}>{t('moreOptions')}</Title>
         <View style={styles.additionalGrid}>
           {additionalItems.map((item, index) => (
             <Card
@@ -134,41 +147,13 @@ export default function DashboardScreen({ navigation, user }) {
                 <Text style={[styles.additionalTitle, { color: item.color }]}>
                   {item.title}
                 </Text>
-                <Text style={styles.additionalTitleHindi}>{item.titleHindi}</Text>
               </Card.Content>
             </Card>
           ))}
         </View>
       </View>
 
-      {/* User Info Card */}
-      {user && (
-        <Card style={styles.userInfoCard}>
-          <Card.Content>
-            <Title style={styles.userInfoTitle}>Your Profile / आपकी प्रोफाइल</Title>
-            <View style={styles.userInfoRow}>
-              <Ionicons name="person" size={20} color="#666" />
-              <Text style={styles.userInfoText}>Name: {user.name}</Text>
-            </View>
-            <View style={styles.userInfoRow}>
-              <Ionicons name="call" size={20} color="#666" />
-              <Text style={styles.userInfoText}>Phone: {user.phone}</Text>
-            </View>
-            {user.location && (
-              <View style={styles.userInfoRow}>
-                <Ionicons name="location" size={20} color="#666" />
-                <Text style={styles.userInfoText}>Location: {user.location}</Text>
-              </View>
-            )}
-            {user.soil_type && (
-              <View style={styles.userInfoRow}>
-                <Ionicons name="earth" size={20} color="#666" />
-                <Text style={styles.userInfoText}>Soil Type: {user.soil_type}</Text>
-              </View>
-            )}
-          </Card.Content>
-        </Card>
-      )}
+
 
       {/* Tips Section */}
       <Card style={styles.tipsCard}>
@@ -193,6 +178,43 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+  },
+  headerCard: {
+    margin: 15,
+    marginBottom: 10,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+  },
+  appNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  appName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginLeft: 10,
+    marginRight: 5,
+  },
+  appNameHindi: {
+    fontSize: 16,
+    color: '#4CAF50',
+    marginTop: 5,
+  },
+  profileButton: {
+    margin: 0,
+    padding: 0,
+  },
+  profileButtonContent: {
+    margin: 0,
+    padding: 0,
   },
   welcomeCard: {
     margin: 15,
@@ -289,27 +311,7 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
-  userInfoCard: {
-    margin: 15,
-    borderRadius: 12,
-    elevation: 2,
-  },
-  userInfoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-    marginBottom: 10,
-  },
-  userInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  userInfoText: {
-    marginLeft: 10,
-    fontSize: 14,
-    color: '#666',
-  },
+
   tipsCard: {
     margin: 15,
     marginBottom: 30,

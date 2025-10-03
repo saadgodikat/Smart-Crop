@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -20,17 +21,22 @@ import ApiService from '../services/api';
 
 export default function WeatherScreen({ user }) {
   const [weather, setWeather] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);  
   const [searchQuery, setSearchQuery] = useState('');
   const [currentLocation, setCurrentLocation] = useState('');
 
   const API_KEY = 'b6ca262dc1d56e9480c61a34cad13d46';
 
+  
   useEffect(() => {
     // Load default location weather on component mount
     if (user?.location) {
       setSearchQuery(user.location);
       fetchWeatherData(user.location);
+    } else {
+      // Default to a major city if no user location
+      setSearchQuery('Mumbai');
+      fetchWeatherData('Mumbai');
     }
   }, []);
 
@@ -42,12 +48,17 @@ export default function WeatherScreen({ user }) {
 
     setLoading(true);
     try {
+      console.log('Fetching weather for:', cityName);
       const response = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cityName)}&appid=${API_KEY}&units=metric`
       );
       
+      console.log('API Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('City not found. Please check the spelling and try again.');
+        const errorData = await response.json();
+        console.log('API Error:', errorData);
+        throw new Error(errorData.message || 'City not found. Please check the spelling and try again.');
       }
       
       const data = await response.json();
@@ -69,6 +80,7 @@ export default function WeatherScreen({ user }) {
       
       setWeather(weatherData);
       setCurrentLocation(cityName);
+      console.log('Weather data updated for:', cityName);
     } catch (error) {
       Alert.alert('Error', error.message);
     } finally {
